@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jumpcut</title>
+<meta name="description" content="Cinematic games and simulations, streamed instantly from the cloud. Coming soon.">
+<meta name="theme-color" content="#f2f4f5">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%230e2228'/%3E%3Cpolygon points='59.2,40 142.6,90 59.2,119.2' fill='%23f3e7d3'/%3E%3Cpolygon points='76,125.2 159.4,96 172,103.6 76,161.2' fill='%23f3e7d3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f2f4f5;
+    --ink: #1e252b;
+    --muted: #5f6a72;
+    --line: #cfd5d9;
+    --screen: #0e2228;
+    --beam: #24474d;
+    --light: #f3e7d3;
+  }
+  * { box-sizing: border-box; }
+  html { height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    min-height: 100svh;
+    max-width: 78rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    padding: calc(clamp(1.25rem, 4vw, 3rem) + env(safe-area-inset-top, 0px)) clamp(1.25rem, 4vw, 3rem) calc(clamp(1.25rem, 3vw, 2.25rem) + env(safe-area-inset-bottom, 0px));
+  }
+  .logo {
+    margin: 0;
+    font-family: "Big Shoulders Display", Impact, sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    letter-spacing: .02em;
+    line-height: 1;
+  }
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+    align-content: center;
+  }
+  .lead {
+    margin: 0 0 .6em;
+    font-size: clamp(1.9rem, 3.6vw, 3.1rem);
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+  }
+  .support { margin: 0; max-width: 30rem; font-size: clamp(1.05rem, 1.5vw, 1.25rem); line-height: 1.5; color: var(--muted); }
+
+  /* The screen: same picture as the cinematic page */
+  .screen {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.55) 100%),
+      radial-gradient(110% 90% at 18% 0%, var(--beam) 0%, transparent 62%),
+      var(--screen);
+    box-shadow: 0 30px 60px -32px rgba(14, 34, 40, .5), 0 0 140px 30px rgba(36, 71, 77, .09);
+  }
+  .screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .14;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .screen p {
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    font-family: "Big Shoulders Display", Impact, sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--light);
+    font-size: clamp(2rem, 5vw, 4rem);
+    letter-spacing: .03em;
+  }
+  /* Low-res blocks that drop out as the frame "decodes" on load */
+  .blocks {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+  }
+  .blocks i { animation: drop .01s linear forwards; animation-delay: var(--d); }
+  @keyframes drop { to { opacity: 0; } }
+
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: .75rem 2rem;
+    border-top: 1px solid var(--line);
+    padding-top: 1.25rem;
+    color: var(--muted);
+    font-size: 1rem;
+  }
+  footer p { margin: 0; }
+  footer a { color: var(--ink); font-weight: 500; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+  footer a:hover { text-decoration-thickness: 2px; }
+  footer a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 2px; }
+
+  @media (max-width: 52rem) {
+    main { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .blocks { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header><p class="logo">Jumpcut</p></header>
+    <main>
+      <div>
+        <h1 class="lead">Cinematic games and simulations, streamed instantly from the cloud.</h1>
+        <p class="support">Nothing runs on the device, so there's nothing to copy or tamper with.</p>
+      </div>
+      <div class="screen">
+        <p>Coming soon</p>
+        <div class="blocks" aria-hidden="true"></div>
+      </div>
+    </main>
+    <footer>
+      <p>For iGaming operators, game studios and simulation teams.</p>
+      <a href="mailto:sales@jumpcut.cloud">sales@jumpcut.cloud</a>
+    </footer>
+  </div>
+  <script>
+    // Build a 16x9 grid of blocky approximations of the frame, then drop them in random order
+    (function () {
+      var grid = document.querySelector('.blocks');
+      if (!grid || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var shades = ['#2a5056', '#22434a', '#1a363c', '#132a30', '#0e2228', '#0a1a1f'];
+      for (var r = 0; r < 9; r++) {
+        for (var c = 0; c < 16; c++) {
+          var dx = c / 15 - 0.18, dy = r / 8;
+          var t = Math.min(0.999, Math.sqrt(dx * dx + dy * dy) * 0.8 + Math.random() * 0.2);
+          var b = document.createElement('i');
+          b.style.background = shades[Math.floor(t * shades.length)];
+          b.style.setProperty('--d', (250 + Math.random() * 900) + 'ms');
+          grid.appendChild(b);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
