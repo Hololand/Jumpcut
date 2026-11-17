@@ -1,0 +1,5 @@
+# GitHub Pages builds the site with Jekyll. Folders starting with an
+# underscore, such as _dev, are never published. The README is for the repo,
+# not the site.
+exclude:
+  - README.md
