@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="beam" cx="0.2" cy="0" r="0.9">
+      <stop offset="0" stop-color="#2a5056"/>
+      <stop offset="0.6" stop-color="#0e2228" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.5" r="0.75">
+      <stop offset="0.55" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.5"/>
+    </radialGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24474d"/>
+      <stop offset="1" stop-color="#132a30"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="#0e2228"/>
+  <rect width="1600" height="900" fill="url(#beam)"/>
+  <circle cx="1270" cy="210" r="96" fill="#f3e7d3" opacity="0.16"/>
+  <circle cx="1270" cy="210" r="58" fill="#f3e7d3" opacity="0.22"/>
+  <!-- cliffs, low poly -->
+  <polygon points="0,520 120,380 210,430 330,300 420,470 470,600 0,640" fill="#1a363c"/>
+  <polygon points="1600,500 1490,350 1400,410 1300,320 1190,470 1150,610 1600,640" fill="#1a363c"/>
+  <polygon points="120,380 210,430 170,520" fill="#22434a"/>
+  <polygon points="1300,320 1400,410 1340,500" fill="#22434a"/>
+  <!-- the sea -->
+  <rect y="600" width="1600" height="300" fill="url(#sea)"/>
+  <polyline points="0,660 80,644 160,660 240,644 320,660 400,644 480,660 560,644 640,660 720,644 800,660 880,644 960,660 1040,644 1120,660 1200,644 1280,660 1360,644 1440,660 1520,644 1600,660" fill="none" stroke="#2a5056" stroke-width="6"/>
+  <polyline points="0,740 100,722 200,740 300,722 400,740 500,722 600,740 700,722 800,740 900,722 1000,740 1100,722 1200,740 1300,722 1400,740 1500,722 1600,740" fill="none" stroke="#22434a" stroke-width="6"/>
+  <!-- the ship, behind the reels -->
+  <g opacity="0.9">
+    <polygon points="190,600 470,600 430,650 230,650" fill="#0a1a1f"/>
+    <rect x="322" y="380" width="10" height="222" fill="#0a1a1f"/>
+    <polygon points="332,392 332,560 430,560" fill="#f3e7d3" opacity="0.55"/>
+    <polygon points="322,410 322,560 236,560" fill="#f3e7d3" opacity="0.35"/>
+    <polygon points="332,380 380,392 332,404" fill="#e8b86a" opacity="0.8"/>
+  </g>
+  <!-- reel frame -->
+  <rect x="530" y="190" width="540" height="520" rx="22" fill="#0a1a1f" opacity="0.9"/>
+  <rect x="530" y="190" width="540" height="520" rx="22" fill="none" stroke="#f3e7d3" stroke-opacity="0.5" stroke-width="4"/>
+  <g fill="#132a30">
+    <rect x="560" y="220" width="150" height="460" rx="12"/>
+    <rect x="725" y="220" width="150" height="460" rx="12"/>
+    <rect x="890" y="220" width="150" height="460" rx="12"/>
+  </g>
+  <!-- payline -->
+  <rect x="548" y="383" width="504" height="134" rx="14" fill="#24474d" opacity="0.6"/>
+  <!-- symbols: coin, star, wheel; top and bottom rows dimmed -->
+  <g opacity="0.4" fill="#f3e7d3">
+    <polygon points="635,250 650,282 685,287 660,311 666,346 635,329 604,346 610,311 585,287 620,282"/>
+    <circle cx="800" cy="298" r="48" fill="none" stroke="#f3e7d3" stroke-width="10"/>
+    <polygon points="965,250 1005,298 965,346 925,298"/>
+    <polygon points="635,555 675,603 635,651 595,603"/>
+    <polygon points="800,555 815,587 850,592 825,616 831,651 800,634 769,651 775,616 750,592 785,587"/>
+    <circle cx="965" cy="603" r="48" fill="none" stroke="#f3e7d3" stroke-width="10"/>
+  </g>
+  <g>
+    <circle cx="635" cy="450" r="54" fill="#e8b86a"/>
+    <circle cx="635" cy="450" r="36" fill="none" stroke="#0e2228" stroke-width="8"/>
+    <circle cx="800" cy="450" r="54" fill="#e8b86a"/>
+    <circle cx="800" cy="450" r="36" fill="none" stroke="#0e2228" stroke-width="8"/>
+    <circle cx="965" cy="450" r="54" fill="#e8b86a"/>
+    <circle cx="965" cy="450" r="36" fill="none" stroke="#0e2228" stroke-width="8"/>
+  </g>
+  <rect width="1600" height="900" fill="url(#vig)"/>
+</svg>

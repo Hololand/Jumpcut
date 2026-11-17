@@ -1,0 +1,11 @@
+html, body { height: 100%; margin: 0; }
+body {
+  display: grid;
+  place-items: center;
+  background: #0e2228;
+  color: #f3e7d3;
+  font: 600 .8rem/1 "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+p { margin: 0; opacity: .7; }
