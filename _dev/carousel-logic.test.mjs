@@ -78,6 +78,15 @@ test("launchOutcome maps every answer", () => {
   assert.deepEqual(L.launchOutcome(0, null, PLAY), { kind: "failed" }, "a network failure");
 });
 
+test("showsConsent goes with Play now only", () => {
+  assert.equal(L.showsConsent("preview", "online"), true);
+  assert.equal(L.showsConsent("preview", "offline"), false);
+  assert.equal(L.showsConsent("preview", "busy"), false);
+  assert.equal(L.showsConsent("launching", "online"), false);
+  assert.equal(L.showsConsent("playing", "online"), false, "never over a stream");
+  assert.equal(L.showsConsent(undefined, undefined), false);
+});
+
 test("endReason passes known reasons and folds the rest", () => {
   for (const r of L.END_REASONS) assert.equal(L.endReason(r), r);
   assert.equal(L.endReason("hacked"), "stream_ended");

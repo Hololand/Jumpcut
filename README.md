@@ -15,6 +15,10 @@ The front door for iGaming operators, game studios and simulation teams. Three d
 5. Nothing of ours is drawn over a playing stream. Its controls ("End demo") sit beside it.
 6. Removing the frame ends the stream: the framed page notices it is unloading and ends its own session. That happens on "End demo" and whenever another tile moves into the middle.
 7. When a stream ends for its own reasons, the framed page loads `ended.html?cpExit=<reason>`. That page tells the homepage through `postMessage`, and the homepage removes the frame and shows the preview again.
+8. Wherever "Play now" shows, one small line under it reads "By playing you accept the demo terms", linking to `terms.html`. It shows only with "Play now", never while a demo starts or plays. A "Terms and credits" link is always present: in the footer, and in the top bar on a phone held upright, where the footer is hidden.
+9. `terms.html` holds the demo terms and the credits the engine and content licences ask for. It is plain HTML with no script, and it may scroll.
+
+The terms and credits are a draft. Holland approves the wording before they are published. The Unreal notice names the year as text ("Copyright 1998 – 2026"): update it each January.
 
 Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys, or a tap on a small tile. Each gesture moves one tile, and the carousel stops at both ends. While a demo plays, wheel and swipe inside it belong to the game.
 
@@ -28,9 +32,10 @@ Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys,
 | `carousel-logic.js` | Pure rules with no DOM: ends, status reading, launch URL check, wheel and swipe steps, tile sizing |
 | `config.js` | Backend origins, sales address, timings and the tiles |
 | `ended.html`, `ended.js`, `ended.css` | Where a framed stream lands when it ends; reports the reason to the homepage |
+| `terms.html`, `terms.css` | Demo terms and credits, linked from the footer and from beside "Play now"; its own CSP allows no script |
 | `media/` | Tile stills (SVG, drawn for this site) and the slot's preview videos and posters when present |
 | `_dev/serve.mjs` | Local server and fake backend (not published) |
-| `_dev/*.test.mjs` | Tests for `carousel-logic.js` and `config.js` (not published) |
+| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js` and the terms page and links (not published) |
 | `CNAME`, `favicon.ico`, `logo.png` | Domain and icons |
 
 ## How to run
