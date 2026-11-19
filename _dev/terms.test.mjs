@@ -55,6 +55,9 @@ test("index.html links to the terms in the footer and beside Play now", async ()
   const html = await read("index.html");
   const foot = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
   assert.match(foot, /<a[^>]*href="terms\.html"[^>]*>Terms and credits<\/a>/);
+  const top = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+  // The upright-phone top bar has room for the short label only; its accessible name stays whole.
+  assert.match(top, /<a class="top-terms" href="terms\.html" aria-label="Terms and credits">Terms<\/a>/);
   assert.match(html, /<p class="consent" id="consent">By playing you accept the <a href="terms\.html">demo terms<\/a>\.<\/p>/);
 });
 
