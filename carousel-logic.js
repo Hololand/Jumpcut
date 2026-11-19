@@ -72,6 +72,12 @@ export function launchOutcome(httpStatus, body, playOrigin) {
   return { kind: "failed" };
 }
 
+// The "By playing you accept the demo terms" line goes with Play now only:
+// a preview of an online demo. Never while launching or over a stream.
+export function showsConsent(phase, state) {
+  return phase === "preview" && state === "online";
+}
+
 // The end reason ended.html passes on.
 export function endReason(value) {
   return END_REASONS.includes(value) ? value : "stream_ended";

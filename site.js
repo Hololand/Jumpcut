@@ -18,6 +18,7 @@ const el = {
   pitch: $("pitch"),
   action: $("action"),
   note: $("note"),
+  consent: $("consent"),
   announce: $("announce"),
 };
 
@@ -119,6 +120,8 @@ function render() {
   el.pitch.textContent = featured.pitch;
   el.note.textContent = s.note;
   renderAction(featured);
+  // The terms line goes with Play now and nothing else, so never with a stream.
+  el.consent.classList.toggle("is-on", L.showsConsent(s.phase, s.states[featured.id]));
   renderMedia();
 
   const line = `${featured.name}, ${s.index + 1} of ${tiles.length}. ${STATE_TEXT[shown]}.`;

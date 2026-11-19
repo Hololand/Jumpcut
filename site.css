@@ -73,7 +73,7 @@ body {
   line-height: 1;
 }
 
-.top-mail { display: none; }
+.top-links { display: none; }
 
 .main {
   min-height: 0;
@@ -153,6 +153,20 @@ body {
   gap: .6rem 1.25rem;
   min-height: 3rem;
 }
+/* Shown only beside Play now. Hidden by visibility, not display, so the
+   tile keeps its size when the action changes. Never over a stream: it
+   sits in the info column, outside the tile. */
+.consent {
+  margin: .55rem 0 0;
+  font-size: .85rem;
+  line-height: 1.4;
+  color: var(--muted);
+  visibility: hidden;
+}
+.consent.is-on { visibility: visible; }
+.consent a { color: var(--ink); font-weight: 500; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+.consent a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
 .note {
   margin: .75rem 0 0;
   min-height: 1.4em;
@@ -331,6 +345,8 @@ body {
   font-size: 1rem;
 }
 .foot p { margin: 0; }
+.foot-links { display: flex; flex-wrap: wrap; gap: .5rem 1.75rem; }
+.foot .foot-terms { color: var(--muted); font-weight: 400; }
 .foot a { color: var(--ink); font-weight: 500; text-underline-offset: .2em; text-decoration-thickness: 1px; }
 .foot a:hover { text-decoration-thickness: 2px; }
 
@@ -348,15 +364,17 @@ body {
   .page { grid-template-rows: auto minmax(0, 1fr); }
   .top { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
   .logo { font-size: 1.6rem; }
-  .top-mail {
-    display: inline;
+  .top-links { display: flex; align-items: baseline; gap: .9rem; margin: 0; }
+  .top-links a {
     color: var(--ink);
     font-size: .85rem;
     font-weight: 500;
     text-underline-offset: .2em;
     text-decoration-thickness: 1px;
+    white-space: nowrap;
   }
-  .top-mail:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .top-links .top-terms { color: var(--muted); font-weight: 400; }
+  .top-links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .foot { display: none; }
   .main {
     grid-template-columns: minmax(0, 1fr);
@@ -383,6 +401,7 @@ body {
   .action:has(.busy-line) { grid-column: 1 / -1; grid-row: auto; margin-top: .4rem; justify-content: flex-start; }
   .info:has(.busy-line) .pitch { min-height: 0; }
   .busy-line { font-size: .92rem; max-width: none; }
+  .consent { grid-column: 1 / -1; margin-top: .3rem; font-size: .8rem; }
   .note { grid-column: 1 / -1; margin-top: .35rem; font-size: .88rem; min-height: 1.25em; }
   .note:empty { display: none; }
   .button { min-height: 2.9rem; min-width: 8.75rem; padding: 0 1.15rem; font-size: .95rem; }
@@ -411,6 +430,7 @@ body {
   .pitch { font-size: .98rem; margin-bottom: .75rem; }
   .action { min-height: 2.6rem; }
   .button { min-height: 2.6rem; font-size: .92rem; padding: 0 1.1rem; }
+  .consent { margin-top: .35rem; font-size: .78rem; }
   .note { margin-top: .4rem; font-size: .85rem; }
   .tile-name { font-size: 1.2rem; }
   .tile-state { display: none; }
