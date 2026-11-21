@@ -18,7 +18,7 @@ The front door for iGaming operators, game studios and simulation teams. Three d
 8. Wherever "Play now" shows, one small line under it reads "By playing you accept the demo terms", linking to `terms.html`. It shows only with "Play now", never while a demo starts or plays. A "Terms and credits" link is always present: in the footer, and in the top bar on a phone held upright, where the footer is hidden.
 9. `terms.html` holds the demo terms and the credits the engine and content licences ask for. It is plain HTML with no script, and it may scroll.
 
-The terms and credits are a draft. Holland approves the wording before they are published. The Unreal notice names the year as text ("Copyright 1998 – 2026"): update it each January.
+The terms and credits were published on 19 November 2026 with Holland's yes. A change to their wording needs his yes again. The Unreal notice names the year as text ("Copyright 1998 – 2026"): update it each January.
 
 Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys, or a tap on a small tile. Each gesture moves one tile, and the carousel stops at both ends. While a demo plays, wheel and swipe inside it belong to the game.
 
@@ -93,6 +93,5 @@ This repo is public. It never holds a key, token, password, account number, inte
 
 ## Known limits
 
-- Game and Drone have no server yet, so they always read offline and show a still.
-- The slot's preview videos and posters are added by another task. Until then the slot shows its still.
+- Game and Drone are live demos but show a still, not a video: their preview clips are not made yet.
 - A meta Content-Security-Policy cannot set `frame-ancestors`; that needs a response header, which GitHub Pages does not offer.
