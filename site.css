@@ -511,8 +511,18 @@ body[data-scene="airsim"] .backdrop-airsim { opacity: 1; }
   transition: opacity var(--glide) var(--ease);
   pointer-events: none;
 }
-.tile[data-offset="-1"] .tile-label { bottom: 0; opacity: 1; }
-.tile[data-offset="1"] .tile-label { top: 0; opacity: 1; }
+/* A dark scrim behind the label, so the name reads over whatever the
+   preview shows, the game's own buttons included. Neighbours only. */
+.tile[data-offset="-1"] .tile-label {
+  bottom: 0; opacity: 1;
+  padding-top: 1.6rem;
+  background: linear-gradient(to top, var(--screen) 30%, transparent);
+}
+.tile[data-offset="1"] .tile-label {
+  top: 0; opacity: 1;
+  padding-bottom: 1.6rem;
+  background: linear-gradient(to bottom, var(--screen) 30%, transparent);
+}
 .tile-name {
   font-family: "Big Shoulders Display", Impact, sans-serif;
   font-weight: 800;
@@ -616,12 +626,12 @@ body[data-scene="airsim"] .backdrop-airsim { opacity: 1; }
     margin: .2rem 0 0;
     gap: 3px;
   }
-  .points li { gap: .5em; padding: 0; }
+  .points li { gap: .5em; padding: .07em 0; }
   .point-num { font-size: 1.3em; }
   .action { grid-column: 2; grid-row: 2; align-self: center; justify-content: flex-end; min-height: 0; }
   .action:has(.busy-line) { grid-column: 1 / -1; grid-row: auto; margin-top: .4rem; justify-content: flex-start; }
   .busy-line { font-size: .92rem; max-width: none; }
-  .consent { grid-column: 1 / -1; margin-top: .2rem; font-size: .8rem; }
+  .consent { grid-column: 1 / -1; margin-top: .35rem; font-size: .8rem; }
   .note { grid-column: 1 / -1; margin-top: .35rem; font-size: .88rem; min-height: 1.25em; }
   .note:empty { display: none; }
   .button { min-height: 2.9rem; min-width: 8.75rem; padding: 0 1.15rem; font-size: .95rem; }
