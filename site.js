@@ -3,6 +3,7 @@
 // carousel-logic.js; this file only wires them to the page.
 
 import { config } from "./config.js";
+import { icons } from "./icons.js";
 import * as L from "./carousel-logic.js";
 
 const tiles = config.tiles;
@@ -117,12 +118,8 @@ function render() {
   el.state.dataset.state = shown === "launching" ? "playing" : shown;
   el.state.textContent = STATE_TEXT[shown];
   el.name.textContent = featured.name;
-  el.points.replaceChildren(...featured.points.map((p) => {
-    const li = document.createElement("li");
-    li.textContent = p;
-    return li;
-  }));
-  // CSS keys the scene tint on this.
+  renderPoints(featured);
+  // CSS keys the scene's backdrop, accent and glow on this.
   document.body.dataset.scene = featured.id;
   el.note.textContent = s.note;
   renderAction(featured);
@@ -135,6 +132,43 @@ function render() {
     s.announced = line;
     el.announce.textContent = line;
   }
+}
+
+// The selling points, rebuilt only when the featured scene changes, so a
+// status poll never replays their entrance. The first build replaces the
+// static rows in index.html without animating; later ones come in row by row.
+let pointsScene = null;
+
+function renderPoints(tile) {
+  if (pointsScene === tile.id) return;
+  el.points.classList.toggle("is-entering", pointsScene !== null);
+  pointsScene = tile.id;
+  el.points.replaceChildren(...tile.points.map((p) => {
+    const li = document.createElement("li");
+    const chip = document.createElement("span");
+    chip.className = "point-icon";
+    chip.append(lineIcon(p.icon));
+    const text = document.createElement("span");
+    text.textContent = p.text;
+    li.append(chip, text);
+    return li;
+  }));
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// One of icons.js's line icons. Stroke, width and fill come from site.css.
+function lineIcon(key) {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  for (const d of icons[key] || []) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+  return svg;
 }
 
 function renderAction(tile) {
@@ -274,7 +308,9 @@ function renderMedia() {
 function layout() {
   s.mode = portraitQuery.matches ? "portrait" : "landscape";
   const css = getComputedStyle(el.carousel);
-  const box = el.carousel.getBoundingClientRect();
+  // The track, not the carousel: the carousel reaches past its column to
+  // leave room for the featured tile's glow, and the track is the column.
+  const box = el.track.getBoundingClientRect();
   const fit = L.fitTile({ width: box.width, height: box.height }, s.mode, {
     gap: parseFloat(css.getPropertyValue("--gap")) || 16,
     peek: parseFloat(css.getPropertyValue("--peek")) || 56,
