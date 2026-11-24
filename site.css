@@ -1,3 +1,17 @@
+/* Scene tints (tweak points). Each scene gives the page a faint background
+   and the glow under the featured tile the same hue. The glow's alpha stays
+   at or below the old shadow's .55. Registered as colours so they fade over
+   --glide when the carousel moves. */
+@property --tint { syntax: "<color>"; inherits: true; initial-value: #f6f2ea; }
+@property --glow { syntax: "<color>"; inherits: true; initial-value: rgb(110 85 40 / .45); }
+:root {
+  --tint-lyra: #edf0f7;     /* Video Games: cool blue */
+  --glow-lyra: rgb(40 80 150 / .45);
+  --tint-hello: #f6f2ea;    /* iGaming: warm sand */
+  --glow-hello: rgb(130 95 40 / .45);
+  --tint-airsim: #edf3ee;   /* Simulations: soft green */
+  --glow-airsim: rgb(40 110 70 / .45);
+}
 :root {
   --paper: #f2f4f5;
   --ink: #1e252b;
@@ -30,12 +44,17 @@ body {
   position: fixed;
   inset: 0;
   height: 100svh;
-  background: var(--paper);
+  background: var(--tint);
+  transition: --tint var(--glide) var(--ease), --glow var(--glide) var(--ease);
   color: var(--ink);
   font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
+
+body, body[data-scene="hello"] { --tint: var(--tint-hello); --glow: var(--glow-hello); }
+body[data-scene="lyra"] { --tint: var(--tint-lyra); --glow: var(--glow-lyra); }
+body[data-scene="airsim"] { --tint: var(--tint-airsim); --glow: var(--glow-airsim); }
 
 .sr-only {
   position: absolute;
@@ -101,6 +120,7 @@ body {
 
 /* The featured tile's name, pitch line and one action */
 .info {
+  container-type: inline-size;
   border-top: 1px solid var(--line);
   padding-top: clamp(1rem, 3vh, 1.75rem);
 }
@@ -136,15 +156,31 @@ body {
   font-family: "Big Shoulders Display", Impact, sans-serif;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: clamp(3.25rem, 6.5vw, 6rem);
+  /* One line for the longest names; the container cap shrinks it only where it must */
+  font-size: min(clamp(3.25rem, 6.5vw, 6rem), 17cqi);
+  white-space: nowrap;
   line-height: .88;
   letter-spacing: .01em;
 }
-.pitch {
+/* Three points, one per line. The fixed height fits the longest scene, so the
+   tile never changes size when the carousel moves. */
+.points {
+  list-style: none;
   margin: 0 0 clamp(1rem, 3vh, 1.6rem);
+  padding: 0;
   font-size: clamp(1.05rem, 1.5vw, 1.3rem);
   line-height: 1.4;
-  max-width: 26rem;
+  min-height: 4.2em;
+}
+.points li { position: relative; padding-left: 1.1em; }
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .62em;
+  width: .5em;
+  height: 1.5px;
+  background: var(--muted);
 }
 .action {
   display: flex;
@@ -236,7 +272,7 @@ body {
   background:
     radial-gradient(110% 90% at 18% 0%, var(--beam) 0%, transparent 62%),
     var(--screen);
-  box-shadow: 0 30px 60px -34px rgba(14, 34, 40, .55);
+  box-shadow: 0 30px 60px -34px var(--glow);
   transform: translateY(calc(var(--o) * var(--shift, 0px))) scale(var(--s));
   opacity: 1;
   will-change: transform;
@@ -394,12 +430,28 @@ body {
     align-items: end;
   }
   .eyebrow { grid-column: 1 / -1; font-size: .7rem; gap: .9rem; }
-  .name { grid-column: 1; font-size: 2.6rem; margin: .2em 0 .08em; }
-  /* Two lines always, so the tile keeps its size when the action changes */
-  .pitch { grid-column: 1; font-size: .98rem; margin: 0; line-height: 1.35; min-height: 2.7em; }
-  .action { grid-column: 2; grid-row: 2 / span 2; align-self: center; justify-content: flex-end; min-height: 0; }
+  .name { grid-column: 1; font-size: min(2.3rem, 8.8vw); margin: .2em 0 .08em; }
+  /* Name and action share a row; the points run on beneath, split by middle
+     dots. Two lines always, so the tile keeps its size between scenes. */
+  .points {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    column-gap: .4em;
+    font-size: .88rem;
+    margin: .2rem 0 0;
+    line-height: 1.35;
+    /* Each point stays whole, so the longest scene takes three lines; reserve them */
+    min-height: 4.05em;
+  }
+  .points li { padding: 0; white-space: nowrap; }
+  .points li::before { display: none; }
+  /* The dot trails its point, so a wrapped line never starts with one */
+  .points li:not(:last-child)::after { content: "·"; margin-left: .4em; }
+  .action { grid-column: 2; grid-row: 2; align-self: center; justify-content: flex-end; min-height: 0; }
   .action:has(.busy-line) { grid-column: 1 / -1; grid-row: auto; margin-top: .4rem; justify-content: flex-start; }
-  .info:has(.busy-line) .pitch { min-height: 0; }
   .busy-line { font-size: .92rem; max-width: none; }
   .consent { grid-column: 1 / -1; margin-top: .3rem; font-size: .8rem; }
   .note { grid-column: 1 / -1; margin-top: .35rem; font-size: .88rem; min-height: 1.25em; }
@@ -421,13 +473,14 @@ body {
       calc(1.25rem + env(safe-area-inset-left, 0px));
   }
   .logo { font-size: 1.35rem; }
-  .main { grid-template-columns: minmax(15rem, 4fr) minmax(0, 7fr); gap: 1.5rem; }
+  .main { grid-template-columns: minmax(15rem, 5fr) minmax(0, 7fr); gap: 1.5rem; }
   .intro { gap: .9rem; }
   .lead { font-size: 1.15rem; line-height: 1.2; }
   .info { padding-top: .8rem; }
   .eyebrow { font-size: .68rem; }
   .name { font-size: 2.5rem; }
-  .pitch { font-size: .98rem; margin-bottom: .75rem; }
+  .points { font-size: .9rem; margin-bottom: .75rem; min-height: 4.2em; }
+  .points li { padding-left: .9em; }
   .action { min-height: 2.6rem; }
   .button { min-height: 2.6rem; font-size: .92rem; padding: 0 1.1rem; }
   .consent { margin-top: .35rem; font-size: .78rem; }
@@ -440,5 +493,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   :root { --glide: 1ms; }
+  body { transition: none; }
   .preview .poster, .preview video, .button { transition: none; }
 }

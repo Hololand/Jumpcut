@@ -4,11 +4,11 @@ The Jumpcut homepage. Plain HTML, CSS and ES modules. No framework, no build ste
 
 ## Purpose
 
-The front door for iGaming operators, game studios and simulation teams. Three demo tiles sit in a vertical carousel: Game, Slot and Drone. A visitor can play a live stream of a demo inside the featured tile, or ask for a demo by email.
+The front door for iGaming operators, game studios and simulation teams. Three demo tiles sit in a vertical carousel, one per scene: Video Games, iGaming and Simulations. A visitor can play a live stream of a demo inside the featured tile, or ask for a demo by email.
 
 ## How it works
 
-1. The page loads with Slot in the middle. Game peeks above it and Drone below.
+1. The page loads with iGaming in the middle. Video Games peeks above it and Simulations below. The featured scene shows its name and three selling points, and gives the page a faint tint of its own, with the same hue in the glow under the tile. The tint and glow fade across as the carousel moves. Nothing is drawn over a playing stream.
 2. While the tab is visible, the page asks `GET https://rgs.jumpcut.cloud/v0/demo/status` for the demos' states, at once and then every 20 seconds. Anything unexpected reads as offline.
 3. Each tile shows a preview and one action: "Play now" when its demo is online, a busy line when every seat is taken, and "Request a demo" (an email to sales) otherwise.
 4. Nothing starts on its own. "Play now" sends `POST https://rgs.jumpcut.cloud/v0/demo/launch` with the game's id. The answer's `launchUrl` is framed only when its origin is exactly `https://play.jumpcut.cloud`. The framed page shows its own loading screen, then the game.
@@ -77,7 +77,8 @@ Then run the server and check the page at 1440x900, 390x844 and 844x390.
 | `pollIntervalMs` | `config.js` | 20000 | How often the status is read while the tab is visible |
 | `statusTimeoutMs`, `launchTimeoutMs` | `config.js` | 8000, 15000 | When a status read or launch counts as failed |
 | `featuredOnLoad` | `config.js` | `hello` | The tile in the middle on load |
-| `tiles` | `config.js` | Game, Slot, Drone | Order, ids, names, pitch lines and media |
+| `tiles` | `config.js` | Video Games, iGaming, Simulations | Order, ids, names, three `points` each and media. The ids (`lyra`, `hello`, `airsim`) are the backend's game ids, so they stay |
+| `--tint-<id>`, `--glow-<id>` | `site.css`, top of the file | blue `#edf0f7`, sand `#f6f2ea`, green `#edf3ee` | Each scene's page background and glow colour. Keep the glow's alpha at or below .55 |
 | `--peek`, `--gap`, `--scale` | `site.css` | per layout | How much of the neighbours shows, the space between tiles, their size |
 | `--glide` | `site.css` | 350ms | How long a move takes |
 | Wheel threshold and quiet gap | `wheelStep` in `carousel-logic.js` | 24 px, 180 ms | What counts as one wheel gesture |
@@ -93,5 +94,6 @@ This repo is public. It never holds a key, token, password, account number, inte
 
 ## Known limits
 
-- Game and Drone are live demos but show a still, not a video: their preview clips are not made yet.
+- Video Games and Simulations are live demos but show a still, not a video: their preview clips are not made yet.
+- The points block reserves three lines on every layout, so the tile keeps its size between scenes. A longer point or a fourth one needs that height raised.
 - A meta Content-Security-Policy cannot set `frame-ancestors`; that needs a response header, which GitHub Pages does not offer.

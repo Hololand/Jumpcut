@@ -199,11 +199,18 @@ test("fitTile never goes negative", () => {
   assert.equal(t.height, 0);
 });
 
-test("config lists Game, Slot and Drone in order and features Slot", () => {
-  assert.deepEqual(config.tiles.map((t) => t.name), ["Game", "Slot", "Drone"]);
+test("config lists Video Games, iGaming and Simulations in order and features iGaming", () => {
+  assert.deepEqual(config.tiles.map((t) => t.name), ["Video Games", "iGaming", "Simulations"]);
   assert.deepEqual(config.tiles.map((t) => t.id), ["lyra", "hello", "airsim"]);
   assert.equal(config.featuredOnLoad, "hello");
   assert.equal(config.rgsOrigin, "https://rgs.jumpcut.cloud");
   assert.equal(config.playOrigin, "https://play.jumpcut.cloud");
   for (const t of config.tiles) assert.ok(t.media.still, `${t.name} has a still`);
+});
+
+test("every tile has exactly three non-empty points", () => {
+  for (const tile of config.tiles) {
+    assert.equal(tile.points.length, 3, tile.id);
+    for (const p of tile.points) assert.ok(typeof p === "string" && p.trim().length > 0, tile.id);
+  }
 });

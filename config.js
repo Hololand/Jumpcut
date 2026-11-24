@@ -18,14 +18,14 @@ export const config = Object.freeze({
   tiles: Object.freeze([
     {
       id: "lyra",
-      name: "Game",
-      pitch: "Play instantly, before the download finishes.",
+      name: "Video Games",
+      points: ["Play before the download finishes", "Drives player acquisition", "Safe from decompilation"],
       media: { still: "media/game.svg" },
     },
     {
       id: "hello",
-      name: "Slot",
-      pitch: "Cinematic, instant time to fun.",
+      name: "iGaming",
+      points: ["Industry-leading quality", "Instant time to fun", "Tamper-proof by design"],
       media: {
         still: "media/slot.svg",
         landscape: { video: "media/slot-landscape.mp4", poster: "media/slot-landscape.jpg" },
@@ -34,8 +34,8 @@ export const config = Object.freeze({
     },
     {
       id: "airsim",
-      name: "Drone",
-      pitch: "Secure, any device, no hardware.",
+      name: "Simulations",
+      points: ["Secure: nothing runs on the device", "Anywhere with an internet connection", "Any device, no special hardware"],
       media: { still: "media/drone.svg" },
     },
   ]),

@@ -15,7 +15,7 @@ const el = {
   position: $("position"),
   state: $("state"),
   name: $("name"),
-  pitch: $("pitch"),
+  points: $("points"),
   action: $("action"),
   note: $("note"),
   consent: $("consent"),
@@ -117,7 +117,13 @@ function render() {
   el.state.dataset.state = shown === "launching" ? "playing" : shown;
   el.state.textContent = STATE_TEXT[shown];
   el.name.textContent = featured.name;
-  el.pitch.textContent = featured.pitch;
+  el.points.replaceChildren(...featured.points.map((p) => {
+    const li = document.createElement("li");
+    li.textContent = p;
+    return li;
+  }));
+  // CSS keys the scene tint on this.
+  document.body.dataset.scene = featured.id;
   el.note.textContent = s.note;
   renderAction(featured);
   // The terms line goes with Play now and nothing else, so never with a stream.
