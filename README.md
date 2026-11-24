@@ -8,8 +8,8 @@ The front door for iGaming operators, game studios and simulation teams. Three d
 
 ## How it works
 
-1. The page loads with iGaming in the middle. Video Games peeks above it and Simulations below. The featured scene shows its name and its three selling points as feature rows, each an icon in a small chip beside a bold line.
-2. Each scene has its own accent colours and backdrop: two soft pools of light and one faint pattern. Video Games is blue and violet over an arena floor grid, iGaming is sun gold and deep amber over faint card suits, and Simulations is alpine green and sky blue over a contour map. The backdrops sit in a fixed layer behind the page and crossfade when the carousel moves. The featured tile glows in its scene's accent, outside its edge, never over its picture. The rows come in one after another. With reduced motion on, nothing fades or moves.
+1. The page loads with iGaming in the middle. Video Games peeks above it and Simulations below. The featured scene shows its name and its three selling points as numbered rows: a large numeral (01, 02, 03) in the scene's accent, then the point in a strong weight, with thin rules between the rows.
+2. Each scene has its own accent colours and backdrop: two soft pools of light and one faint pattern. Video Games is blue and violet over an arena floor grid, iGaming is sun gold and deep amber over faint card suits, and Simulations is alpine green and sky blue over a contour map. The backdrops sit in a fixed layer behind the page and crossfade when the carousel moves. The featured tile sits on a soft, tight shadow in its scene's accent with a faint accent edge, outside its edge and never over its picture, like a framed picture. The rows come in one after another. With reduced motion on, nothing fades or moves.
 3. While the tab is visible, the page asks `GET https://rgs.jumpcut.cloud/v0/demo/status` for the demos' states, at once and then every 20 seconds. Anything unexpected reads as offline.
 4. Each tile shows a preview and one action: "Play now" when its demo is online, a busy line when every seat is taken, and "Request a demo" (an email to sales) otherwise.
 5. Nothing starts on its own. "Play now" sends `POST https://rgs.jumpcut.cloud/v0/demo/launch` with the game's id. The answer's `launchUrl` is framed only when its origin is exactly `https://play.jumpcut.cloud`. The framed page shows its own loading screen, then the game.
@@ -30,14 +30,13 @@ Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys,
 | `index.html` | The page, its Content-Security-Policy and the three backdrop layers. Its first paint is iGaming's |
 | `site.css` | All styles, with the layouts for desktop, phone upright and phone sideways. The scene colours, backdrops and glow are tweak points at the top; the backdrop patterns are SVG drawn for this site, inline as `data:` URIs |
 | `site.js` | Builds the tiles and the selling-point rows, and wires input, status, launch and the frame |
-| `icons.js` | Nine line icons drawn for this site, one per selling point. `site.js` builds each as an inline SVG |
 | `carousel-logic.js` | Pure rules with no DOM: ends, status reading, launch URL check, wheel and swipe steps, tile sizing |
 | `config.js` | Backend origins, sales address, timings and the tiles |
 | `ended.html`, `ended.js`, `ended.css` | Where a framed stream lands when it ends; reports the reason to the homepage |
 | `terms.html`, `terms.css` | Demo terms and credits, linked from the footer and from beside "Play now"; its own CSP allows no script |
 | `media/` | Tile stills (SVG, drawn for this site) and the slot's preview videos and posters when present |
 | `_dev/serve.mjs` | Local server and fake backend (not published) |
-| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, `icons.js`, the first paint of `index.html`, and the terms page and links (not published) |
+| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, the first paint of `index.html`, and the terms page and links (not published) |
 | `CNAME`, `favicon.ico`, `logo.png` | Domain and icons |
 
 ## How to run
@@ -79,15 +78,14 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | `pollIntervalMs` | `config.js` | 20000 | How often the status is read while the tab is visible |
 | `statusTimeoutMs`, `launchTimeoutMs` | `config.js` | 8000, 15000 | When a status read or launch counts as failed |
 | `featuredOnLoad` | `config.js` | `hello` | The tile in the middle on load |
-| `tiles` | `config.js` | Video Games, iGaming, Simulations | Order, ids, names, media and three `points` each, every point `{ icon, text }` with `icon` a key in `icons.js`. The ids (`lyra`, `hello`, `airsim`) are the backend's game ids, so they stay |
+| `tiles` | `config.js` | Video Games, iGaming, Simulations | Order, ids, names, media and three `points` each, every point `{ text }`, one line, shown beside its number. The ids (`lyra`, `hello`, `airsim`) are the backend's game ids, so they stay |
 | `--ground-<id>` | `site.css`, top of the file | `#eef0fa`, `#f8f3e9`, `#eef4f0` | Each scene's page colour. Keep it light: all text is ink on it |
-| `--accent-<id>`, `--second-<id>` | `site.css`, top of the file | blue `#3b5cff` and violet `#8a5cf5`; gold `#e3a21a` and amber `#d9822b`; green `#2f9e5e` and sky `#3b9fe0` | The scene's two colours: the pools, the glow, the chips and the short stroke on the rule |
-| `--deep-<id>` | `site.css`, top of the file | `#2b3bb3`, `#8a5a00`, `#1d6a3f` | The icons and the position number. Keep it dark enough to read on its chip |
+| `--accent-<id>`, `--second-<id>` | `site.css`, top of the file | blue `#3b5cff` and violet `#8a5cf5`; gold `#e3a21a` and amber `#d9822b`; green `#2f9e5e` and sky `#3b9fe0` | The scene's two colours: the pools, the glow, the numerals and the short stroke on the rule |
+| `--deep-<id>` | `site.css`, top of the file | `#2b3bb3`, `#8a5a00`, `#1d6a3f` | The position number. Keep it dark enough to read on the page |
 | `--pool-<id>` | `site.css`, top of the file | 26%, 32%, 28% | How strong the two pools of light are at their centres |
 | `--pattern-<id>`, `--pattern-upright` | `site.css`, top of the file | .13, .17, .11; .7 on an upright phone | How visible the floor grid, card suits and contours are. Upright phones multiply by `--pattern-upright`, because the text sits on the patterns there |
-| `--glow-edge`, `--glow-halo`, `--glow-blur` | `site.css`, top of the file | 50%, 48%, 36px (22px on phones) | The featured tile's thin accent edge, its coloured halo and how far the halo spreads |
+| `--glow-edge`, `--glow-halo`, `--glow-blur` | `site.css`, top of the file | 38%, 26%, 26px (16px on phones) | The featured tile's faint accent edge, its soft coloured shadow and how far the shadow spreads |
 | `--halo-room` | `site.css`, top of the file and per layout | up to 40px on desktop; 1rem upright; 1.1rem sideways | Room beside the tile for the halo. Keep it at or below the gap beside the carousel, so the carousel never covers the text column |
-| `--chip-fill`, `--chip-edge` | `site.css`, top of the file | 15%, 34% | How strong the icon chips' fill and border are |
 | `--scene-fade`, `--row-stagger` | `site.css`, top of the file | 600ms, 60ms | How long a backdrop crossfade and glow change take, and the delay between the rows coming in |
 | `--peek`, `--gap`, `--scale` | `site.css` | per layout | How much of the neighbours shows, the space between tiles, their size |
 | `--glide` | `site.css` | 350ms | How long a move takes |

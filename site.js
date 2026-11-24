@@ -3,7 +3,6 @@
 // carousel-logic.js; this file only wires them to the page.
 
 import { config } from "./config.js";
-import { icons } from "./icons.js";
 import * as L from "./carousel-logic.js";
 
 const tiles = config.tiles;
@@ -143,33 +142,20 @@ function renderPoints(tile) {
   if (pointsScene === tile.id) return;
   el.points.classList.toggle("is-entering", pointsScene !== null);
   pointsScene = tile.id;
-  el.points.replaceChildren(...tile.points.map((p) => {
+  el.points.replaceChildren(...tile.points.map((p, n) => {
     const li = document.createElement("li");
-    const chip = document.createElement("span");
-    chip.className = "point-icon";
-    chip.append(lineIcon(p.icon));
+    const num = document.createElement("span");
+    num.className = "point-num";
+    num.setAttribute("aria-hidden", "true");
+    num.textContent = String(n + 1).padStart(2, "0");
     const text = document.createElement("span");
     text.textContent = p.text;
-    li.append(chip, text);
+    li.append(num, text);
     return li;
   }));
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-
-// One of icons.js's line icons. Stroke, width and fill come from site.css.
-function lineIcon(key) {
-  const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
-  for (const d of icons[key] || []) {
-    const path = document.createElementNS(SVG_NS, "path");
-    path.setAttribute("d", d);
-    svg.append(path);
-  }
-  return svg;
-}
 
 function renderAction(tile) {
   const hadFocus = el.action.contains(document.activeElement);

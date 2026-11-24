@@ -4,7 +4,6 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import * as L from "../carousel-logic.js";
 import { config } from "../config.js";
-import { icons } from "../icons.js";
 
 const PLAY = "https://play.jumpcut.cloud";
 
@@ -211,13 +210,12 @@ test("config lists Video Games, iGaming and Simulations in order and features iG
   for (const t of config.tiles) assert.ok(t.media.still, `${t.name} has a still`);
 });
 
-test("every tile has exactly three points, each with text and a known icon", () => {
+test("every tile has exactly three points, each with its text", () => {
   for (const tile of config.tiles) {
     assert.equal(tile.points.length, 3, tile.id);
     for (const p of tile.points) {
       assert.ok(p && typeof p === "object", `${tile.id}: a point is an object`);
       assert.ok(typeof p.text === "string" && p.text.trim().length > 0, `${tile.id}: non-empty text`);
-      assert.ok(typeof p.icon === "string" && Object.hasOwn(icons, p.icon), `${tile.id}: icon ${p.icon} is in icons.js`);
     }
   }
 });
@@ -235,15 +233,9 @@ test("index.html's first paint shows the featured scene", async () => {
   const featured = config.tiles.find((t) => t.id === config.featuredOnLoad);
   assert.match(html, new RegExp(`<body data-scene="${featured.id}">`));
   const list = html.slice(html.indexOf('<ul class="points"'), html.indexOf("</ul>"));
-  const rows = [...list.matchAll(/<li><span class="point-icon"><\/span><span>([^<]*)<\/span><\/li>/g)].map((m) => m[1]);
+  const rows = [...list.matchAll(/<li><span class="point-num" aria-hidden="true">0\d<\/span><span>([^<]*)<\/span><\/li>/g)].map((m) => m[1]);
   assert.deepEqual(rows, featured.points.map((p) => p.text));
   const layers = html.slice(html.indexOf('<div class="backdrops" aria-hidden="true">'), html.indexOf('<div class="page">'));
   for (const t of config.tiles) assert.match(layers, new RegExp(`class="backdrop backdrop-${t.id}"`), t.id);
 });
 
-test("every icon is a list of path strings", () => {
-  for (const [key, paths] of Object.entries(icons)) {
-    assert.ok(Array.isArray(paths) && paths.length > 0, key);
-    for (const d of paths) assert.ok(typeof d === "string" && /^M/.test(d), `${key}: ${d}`);
-  }
-});
