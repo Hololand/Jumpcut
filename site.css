@@ -431,25 +431,17 @@ body[data-scene="airsim"] { --tint: var(--tint-airsim); --glow: var(--glow-airsi
   }
   .eyebrow { grid-column: 1 / -1; font-size: .7rem; gap: .9rem; }
   .name { grid-column: 1; font-size: min(2.3rem, 8.8vw); margin: .2em 0 .08em; }
-  /* Name and action share a row; the points run on beneath, split by middle
-     dots. Two lines always, so the tile keeps its size between scenes. */
+  /* Name and action share a row; the points run on beneath, one per line like
+     the other layouts. Three lines for every scene, so the tile keeps its size. */
   .points {
     grid-column: 1 / -1;
     grid-row: 3;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    column-gap: .4em;
     font-size: .88rem;
     margin: .2rem 0 0;
     line-height: 1.35;
-    /* Each point stays whole, so the longest scene takes three lines; reserve them */
     min-height: 4.05em;
   }
-  .points li { padding: 0; white-space: nowrap; }
-  .points li::before { display: none; }
-  /* The dot trails its point, so a wrapped line never starts with one */
-  .points li:not(:last-child)::after { content: "·"; margin-left: .4em; }
+  .points li { white-space: nowrap; }
   .action { grid-column: 2; grid-row: 2; align-self: center; justify-content: flex-end; min-height: 0; }
   .action:has(.busy-line) { grid-column: 1 / -1; grid-row: auto; margin-top: .4rem; justify-content: flex-start; }
   .busy-line { font-size: .92rem; max-width: none; }
