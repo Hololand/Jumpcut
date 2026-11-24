@@ -155,8 +155,6 @@ function renderPoints(tile) {
   }));
 }
 
-const SVG_NS = "http://www.w3.org/2000/svg";
-
 function renderAction(tile) {
   const hadFocus = el.action.contains(document.activeElement);
   const state = s.states[tile.id];

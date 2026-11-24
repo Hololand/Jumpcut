@@ -1,5 +1,5 @@
 /* Scenes (tweak points). Each scene has a light ground, an accent, a second
-   colour and a deep shade of the accent for icons. Its backdrop is two soft
+   colour and a deep shade of the accent for the position number. Its backdrop is two soft
    light pools in the accent and the second colour, and one faint pattern.
    Pool strengths are how much colour is mixed into transparent at a pool's
    centre. Pattern strengths are the pattern layer's opacity. Keep the grounds
