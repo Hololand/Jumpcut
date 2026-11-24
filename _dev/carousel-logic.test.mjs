@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import * as L from "../carousel-logic.js";
 import { config } from "../config.js";
 
@@ -199,11 +201,41 @@ test("fitTile never goes negative", () => {
   assert.equal(t.height, 0);
 });
 
-test("config lists Game, Slot and Drone in order and features Slot", () => {
-  assert.deepEqual(config.tiles.map((t) => t.name), ["Game", "Slot", "Drone"]);
+test("config lists Video Games, iGaming and Simulations in order and features iGaming", () => {
+  assert.deepEqual(config.tiles.map((t) => t.name), ["Video Games", "iGaming", "Simulations"]);
   assert.deepEqual(config.tiles.map((t) => t.id), ["lyra", "hello", "airsim"]);
   assert.equal(config.featuredOnLoad, "hello");
   assert.equal(config.rgsOrigin, "https://rgs.jumpcut.cloud");
   assert.equal(config.playOrigin, "https://play.jumpcut.cloud");
   for (const t of config.tiles) assert.ok(t.media.still, `${t.name} has a still`);
 });
+
+test("every tile has exactly three points, each with its text", () => {
+  for (const tile of config.tiles) {
+    assert.equal(tile.points.length, 3, tile.id);
+    for (const p of tile.points) {
+      assert.ok(p && typeof p === "object", `${tile.id}: a point is an object`);
+      assert.ok(typeof p.text === "string" && p.text.trim().length > 0, `${tile.id}: non-empty text`);
+    }
+  }
+});
+
+test("the points keep their wording", () => {
+  assert.deepEqual(config.tiles.map((t) => t.points.map((p) => p.text)), [
+    ["Play before the download finishes", "Drives player acquisition", "Safe from decompilation"],
+    ["Industry-leading quality", "Instant time to fun", "Tamper-proof by design"],
+    ["Secure: nothing runs on the device", "Anywhere with an internet connection", "Any device, no special hardware"],
+  ]);
+});
+
+test("index.html's first paint shows the featured scene", async () => {
+  const html = await readFile(fileURLToPath(new URL("../index.html", import.meta.url)), "utf8");
+  const featured = config.tiles.find((t) => t.id === config.featuredOnLoad);
+  assert.match(html, new RegExp(`<body data-scene="${featured.id}">`));
+  const list = html.slice(html.indexOf('<ul class="points"'), html.indexOf("</ul>"));
+  const rows = [...list.matchAll(/<li><span class="point-num" aria-hidden="true">0\d<\/span><span>([^<]*)<\/span><\/li>/g)].map((m) => m[1]);
+  assert.deepEqual(rows, featured.points.map((p) => p.text));
+  const layers = html.slice(html.indexOf('<div class="backdrops" aria-hidden="true">'), html.indexOf('<div class="page">'));
+  for (const t of config.tiles) assert.match(layers, new RegExp(`class="backdrop backdrop-${t.id}"`), t.id);
+});
+

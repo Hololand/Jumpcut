@@ -15,7 +15,7 @@ const el = {
   position: $("position"),
   state: $("state"),
   name: $("name"),
-  pitch: $("pitch"),
+  points: $("points"),
   action: $("action"),
   note: $("note"),
   consent: $("consent"),
@@ -117,7 +117,9 @@ function render() {
   el.state.dataset.state = shown === "launching" ? "playing" : shown;
   el.state.textContent = STATE_TEXT[shown];
   el.name.textContent = featured.name;
-  el.pitch.textContent = featured.pitch;
+  renderPoints(featured);
+  // CSS keys the scene's backdrop, accent and glow on this.
+  document.body.dataset.scene = featured.id;
   el.note.textContent = s.note;
   renderAction(featured);
   // The terms line goes with Play now and nothing else, so never with a stream.
@@ -129,6 +131,28 @@ function render() {
     s.announced = line;
     el.announce.textContent = line;
   }
+}
+
+// The selling points, rebuilt only when the featured scene changes, so a
+// status poll never replays their entrance. The first build replaces the
+// static rows in index.html without animating; later ones come in row by row.
+let pointsScene = null;
+
+function renderPoints(tile) {
+  if (pointsScene === tile.id) return;
+  el.points.classList.toggle("is-entering", pointsScene !== null);
+  pointsScene = tile.id;
+  el.points.replaceChildren(...tile.points.map((p, n) => {
+    const li = document.createElement("li");
+    const num = document.createElement("span");
+    num.className = "point-num";
+    num.setAttribute("aria-hidden", "true");
+    num.textContent = String(n + 1).padStart(2, "0");
+    const text = document.createElement("span");
+    text.textContent = p.text;
+    li.append(num, text);
+    return li;
+  }));
 }
 
 function renderAction(tile) {
@@ -268,7 +292,9 @@ function renderMedia() {
 function layout() {
   s.mode = portraitQuery.matches ? "portrait" : "landscape";
   const css = getComputedStyle(el.carousel);
-  const box = el.carousel.getBoundingClientRect();
+  // The track, not the carousel: the carousel reaches past its column to
+  // leave room for the featured tile's glow, and the track is the column.
+  const box = el.track.getBoundingClientRect();
   const fit = L.fitTile({ width: box.width, height: box.height }, s.mode, {
     gap: parseFloat(css.getPropertyValue("--gap")) || 16,
     peek: parseFloat(css.getPropertyValue("--peek")) || 56,

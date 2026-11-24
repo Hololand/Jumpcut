@@ -1,3 +1,49 @@
+/* Scenes (tweak points). Each scene has a light ground, an accent, a second
+   colour and a deep shade of the accent for the position number. Its backdrop is two soft
+   light pools in the accent and the second colour, and one faint pattern.
+   Pool strengths are how much colour is mixed into transparent at a pool's
+   centre. Pattern strengths are the pattern layer's opacity. Keep the grounds
+   light: all text is ink on them. */
+:root {
+  --scene-fade: 600ms;        /* backdrop crossfade and glow change */
+  --row-stagger: 60ms;        /* delay between selling-point rows coming in */
+
+  /* Video Games: electric blue and violet, an arena floor */
+  --ground-lyra: #eef0fa;
+  --accent-lyra: #3b5cff;
+  --second-lyra: #8a5cf5;
+  --deep-lyra: #2b3bb3;
+  --pool-lyra: 26%;
+  --pattern-lyra: .13;
+
+  /* iGaming: sun gold and deep amber, card suits */
+  --ground-hello: #f8f3e9;
+  --accent-hello: #e3a21a;
+  --second-hello: #d9822b;
+  --deep-hello: #8a5a00;
+  --pool-hello: 32%;
+  --pattern-hello: .17;
+
+  /* Simulations: alpine green and sky blue, a contour map */
+  --ground-airsim: #eef4f0;
+  --accent-airsim: #2f9e5e;
+  --second-airsim: #3b9fe0;
+  --deep-airsim: #1d6a3f;
+  --pool-airsim: 28%;
+  --pattern-airsim: .11;
+
+  /* The featured tile's glow: a faint accent edge and a soft, tight coloured
+     shadow over a dark drop shadow, so the tile sits like a framed picture. --halo-room is the space kept beside the tile so the
+     halo is not cut off. It never exceeds the gap beside the carousel, so
+     the carousel never covers the text column; set per layout below. */
+  --glow-edge: 38%;
+  --glow-halo: 26%;
+  --glow-blur: 26px;
+  --halo-room: clamp(1.5rem, 4.5vw, 40px);
+
+  /* On an upright phone the text sits on the patterns, so they are softer */
+  --pattern-upright: 1;
+}
 :root {
   --paper: #f2f4f5;
   --ink: #1e252b;
@@ -30,11 +76,99 @@ body {
   position: fixed;
   inset: 0;
   height: 100svh;
-  background: var(--paper);
+  background-color: var(--ground);
+  transition: background-color var(--scene-fade) var(--ease);
   color: var(--ink);
   font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* site.js sets data-scene to the featured tile's id; index.html starts on hello. */
+body, body[data-scene="hello"] {
+  --ground: var(--ground-hello);
+  --accent: var(--accent-hello);
+  --deep: var(--deep-hello);
+}
+body[data-scene="lyra"] {
+  --ground: var(--ground-lyra);
+  --accent: var(--accent-lyra);
+  --deep: var(--deep-lyra);
+}
+body[data-scene="airsim"] {
+  --ground: var(--ground-airsim);
+  --accent: var(--accent-airsim);
+  --deep: var(--deep-airsim);
+}
+
+/* The backdrops: one fixed layer per scene behind the page, crossfading on
+   opacity. Pools are large radial gradients, not blurs, so phones stay smooth.
+   Patterns are drawn for this site as SVG data URIs. */
+.backdrops {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--scene-fade) var(--ease);
+}
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+body[data-scene="lyra"] .backdrop-lyra,
+body[data-scene="hello"] .backdrop-hello,
+body[data-scene="airsim"] .backdrop-airsim { opacity: 1; }
+
+.backdrop-lyra {
+  background:
+    radial-gradient(56vmax 42vmax at 2% 0%, color-mix(in srgb, var(--second-lyra) var(--pool-lyra), transparent), transparent 70%),
+    radial-gradient(52vmax 46vmax at 90% 36%, color-mix(in srgb, var(--accent-lyra) var(--pool-lyra), transparent), transparent 70%);
+}
+/* An arena floor: a perspective grid across the lower part of the page */
+.backdrop-lyra::after {
+  top: 54%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 500' preserveAspectRatio='none'%3E%3Cpath d='M-640 0L-3040 500M-550 0L-2800 500M-460 0L-2560 500M-370 0L-2320 500M-280 0L-2080 500M-190 0L-1840 500M-100 0L-1600 500M-10 0L-1360 500M80 0L-1120 500M170 0L-880 500M260 0L-640 500M350 0L-400 500M440 0L-160 500M530 0L80 500M620 0L320 500M710 0L560 500M800 0L800 500M890 0L1040 500M980 0L1280 500M1070 0L1520 500M1160 0L1760 500M1250 0L2000 500M1340 0L2240 500M1430 0L2480 500M1520 0L2720 500M1610 0L2960 500M1700 0L3200 500M1790 0L3440 500M1880 0L3680 500M1970 0L3920 500M2060 0L4160 500M2150 0L4400 500M2240 0L4640 500M0 11.9H1600M0 38.8H1600M0 77.2H1600M0 126H1600M0 184.1H1600M0 251H1600M0 326.2H1600M0 409.3H1600M0 500H1600' fill='none' stroke='%233346c4' stroke-width='1.25' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: calc(var(--pattern-lyra) * var(--pattern-upright));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 60%);
+  mask-image: linear-gradient(to bottom, transparent, #000 60%);
+}
+
+.backdrop-hello {
+  background:
+    radial-gradient(58vmax 44vmax at 0% 2%, color-mix(in srgb, var(--accent-hello) var(--pool-hello), transparent), transparent 70%),
+    radial-gradient(56vmax 44vmax at 100% 100%, color-mix(in srgb, var(--second-hello) var(--pool-hello), transparent), transparent 70%);
+}
+/* Card suits: a faint staggered grid of outlined spades, hearts, diamonds and clubs across the lower part of the page */
+.backdrop-hello::after {
+  top: 40%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240' width='240' height='240'%3E%3Cg fill='none' stroke='%238a5a00' stroke-width='1.25' stroke-linejoin='round'%3E%3Cpath transform='translate(14.399999999999999 14.399999999999999) scale(1.3)' d='M12 2C12 2 4 9 4 14a4 4 0 0 0 7 2.5C10.8 19 10 20.5 8.5 22H15.5C14 20.5 13.2 19 13 16.5a4 4 0 0 0 7-2.5C20 9 12 2 12 2Z'/%3E%3Cpath transform='translate(134.4 14.399999999999999) scale(1.3)' d='M12 21C12 21 3 14.5 3 8.5A4.5 4.5 0 0 1 12 6.5A4.5 4.5 0 0 1 21 8.5C21 14.5 12 21 12 21Z'/%3E%3Cpath transform='translate(74.4 134.4) scale(1.3)' d='M12 2L20 12L12 22L4 12Z'/%3E%3Cpath transform='translate(194.4 134.4) scale(1.3)' d='M12 3A4 4 0 0 0 8.5 9A4 4 0 1 0 11 15.5C10.8 18.5 10 20.5 8.5 22H15.5C14 20.5 13.2 18.5 13 15.5A4 4 0 1 0 15.5 9A4 4 0 0 0 12 3Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 240px 240px;
+  opacity: calc(var(--pattern-hello) * var(--pattern-upright));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent, #000 45%);
+}
+
+.backdrop-airsim {
+  background:
+    radial-gradient(56vmax 44vmax at 100% 0%, color-mix(in srgb, var(--second-airsim) var(--pool-airsim), transparent), transparent 70%),
+    radial-gradient(56vmax 44vmax at 0% 100%, color-mix(in srgb, var(--accent-airsim) var(--pool-airsim), transparent), transparent 70%);
+}
+/* A flight map: contour lines round two hills */
+.backdrop-airsim::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'%3E%3Cpath d='M315.9 892.8Q319 900 316 907Q313 914 308 921Q304 927 298 932Q292 938 284 941Q276 944 267 944Q258 944 250 944Q242 943 234 942Q226 941 219 938Q212 934 208 929Q204 923 202 917Q200 911 197 906Q193 900 189 893Q186 885 188 877Q189 870 197 864Q205 859 214 857Q223 854 232 854Q241 853 250 855Q258 858 264 862Q270 866 275 869Q280 873 288 875Q296 877 305 881Q313 886 316 893zM388 884.9Q394 900 388 915Q382 930 371 943Q361 956 349 967Q336 978 320 984Q303 991 285 991Q267 991 250 989Q234 988 217 986Q201 984 186 978Q171 971 163 959Q155 947 152 935Q148 923 140 912Q132 900 124 885Q116 869 120 853Q123 837 139 826Q155 815 175 810Q194 805 213 804Q232 804 249 809Q266 814 278 823Q290 832 301 838Q312 844 329 848Q346 852 364 861Q382 870 388 885zM462.1 876.9Q472 900 462 923Q452 946 435 965Q418 984 400 1001Q381 1018 355 1027Q330 1037 303 1037Q275 1037 251 1034Q226 1031 201 1029Q176 1027 153 1017Q130 1008 118 990Q106 972 101 954Q95 936 82 918Q70 900 57 876Q45 853 50 828Q56 803 81 787Q106 770 136 763Q166 757 195 756Q223 755 249 763Q274 771 292 784Q310 798 326 807Q343 817 369 822Q395 827 423 841Q452 854 462 877zM538.2 868.7Q553 900 538 931Q523 963 499 988Q476 1013 450 1035Q425 1057 391 1070Q357 1083 320 1082Q283 1082 251 1078Q218 1074 185 1071Q151 1069 120 1057Q89 1045 73 1021Q56 997 49 972Q42 948 25 924Q8 900 -10 868Q-27 836 -20 802Q-13 768 21 747Q56 725 97 717Q138 709 176 708Q215 708 248 718Q282 729 305 747Q329 765 351 777Q372 790 408 796Q444 803 484 820Q524 837 538 869zM616.5 860.2Q636 900 616 940Q596 979 564 1011Q533 1042 501 1069Q468 1096 426 1112Q384 1128 338 1127Q292 1126 251 1120Q210 1115 169 1113Q127 1110 87 1096Q48 1082 27 1052Q6 1022 -3 991Q-12 960 -33 930Q-54 900 -77 860Q-101 820 -92 776Q-83 733 -39 706Q5 680 58 670Q110 661 158 662Q206 662 248 675Q289 688 318 711Q347 733 375 749Q402 764 448 771Q493 778 545 799Q597 820 616 860zM697 851.6Q721 900 696 948Q670 996 630 1033Q591 1071 551 1103Q511 1135 460 1154Q410 1172 355 1171Q300 1169 251 1162Q203 1155 153 1153Q103 1151 55 1135Q6 1120 -20 1084Q-45 1048 -56 1010Q-66 972 -91 936Q-117 900 -146 851Q-175 803 -165 750Q-154 697 -100 666Q-46 634 19 624Q83 615 140 616Q198 617 247 633Q296 648 331 676Q366 703 398 720Q430 738 487 745Q543 753 608 778Q673 803 697 852zM780 842.7Q809 900 778 957Q746 1014 697 1056Q648 1099 600 1136Q553 1173 494 1194Q435 1216 371 1213Q307 1211 251 1203Q196 1195 138 1193Q79 1191 22 1174Q-36 1157 -67 1116Q-98 1074 -109 1030Q-121 985 -150 942Q-180 900 -215 843Q-250 785 -238 723Q-227 661 -162 624Q-97 588 -20 578Q56 569 123 571Q190 574 247 592Q303 610 343 641Q383 673 421 693Q458 712 526 720Q593 728 672 757Q751 785 780 843zM865.3 833.6Q900 900 862 966Q823 1031 764 1080Q704 1128 649 1169Q594 1210 527 1234Q460 1259 387 1255Q315 1252 252 1242Q189 1233 122 1232Q56 1231 -11 1213Q-78 1196 -115 1148Q-151 1101 -164 1049Q-177 998 -210 949Q-243 900 -285 834Q-326 768 -313 696Q-300 624 -224 583Q-148 542 -59 533Q30 524 106 528Q182 532 246 552Q310 573 355 608Q400 643 443 665Q486 687 565 695Q643 703 737 735Q830 767 865 834zM953.1 824.2Q994 900 948 975Q902 1049 831 1103Q761 1156 697 1201Q634 1246 559 1273Q484 1300 403 1296Q322 1292 252 1281Q182 1270 107 1270Q33 1270 -44 1252Q-121 1234 -164 1181Q-206 1129 -220 1070Q-234 1011 -271 955Q-308 900 -355 825Q-403 750 -389 669Q-374 587 -287 541Q-200 495 -98 487Q4 480 89 486Q175 492 246 514Q317 537 367 576Q417 614 466 638Q514 663 604 670Q694 677 803 713Q912 748 953 824zM1404 133.7Q1408 140 1406 147Q1405 154 1399 159Q1393 164 1387 167Q1380 169 1374 171Q1368 173 1362 174Q1356 176 1350 176Q1344 176 1337 176Q1330 177 1322 176Q1313 176 1306 172Q1299 168 1296 161Q1294 154 1296 147Q1299 140 1302 134Q1305 129 1308 124Q1311 119 1315 114Q1320 110 1325 107Q1331 104 1337 102Q1343 100 1350 99Q1357 98 1364 99Q1371 100 1377 104Q1382 108 1386 113Q1391 118 1396 123Q1400 127 1404 134zM1466.8 126.4Q1475 140 1472 155Q1469 170 1456 180Q1443 191 1429 197Q1414 203 1401 207Q1388 211 1376 214Q1363 216 1350 217Q1337 218 1322 219Q1307 220 1289 219Q1270 218 1254 210Q1237 202 1232 186Q1228 171 1233 155Q1239 140 1247 128Q1254 116 1261 105Q1267 95 1276 85Q1285 76 1297 70Q1309 63 1322 59Q1335 54 1351 51Q1366 48 1381 51Q1397 53 1408 62Q1420 71 1429 82Q1438 92 1448 102Q1459 113 1467 126zM1529.9 119.1Q1543 140 1538 163Q1534 186 1513 202Q1493 218 1470 227Q1447 235 1428 242Q1408 248 1389 252Q1370 256 1350 258Q1330 259 1307 261Q1284 263 1255 262Q1226 262 1200 249Q1175 236 1167 212Q1160 187 1170 164Q1180 140 1192 122Q1205 104 1214 87Q1224 71 1237 57Q1250 42 1269 33Q1287 23 1307 15Q1328 8 1351 3Q1374 -2 1398 2Q1422 6 1440 20Q1458 34 1472 50Q1485 66 1501 82Q1517 98 1530 119zM1593.1 111.8Q1610 140 1605 171Q1599 202 1571 224Q1542 245 1511 256Q1480 267 1454 276Q1427 284 1402 290Q1376 296 1350 298Q1323 301 1292 304Q1260 307 1221 306Q1181 306 1146 288Q1110 271 1101 238Q1091 205 1106 172Q1121 140 1139 116Q1157 92 1170 70Q1182 48 1200 29Q1217 9 1241 -4Q1265 -18 1293 -28Q1320 -38 1351 -45Q1383 -53 1415 -48Q1448 -43 1473 -23Q1497 -4 1515 18Q1533 40 1554 62Q1576 84 1593 112zM1656.3 104.6Q1679 140 1671 179Q1664 218 1628 245Q1591 272 1551 285Q1511 298 1479 309Q1446 319 1414 327Q1383 335 1349 339Q1316 342 1276 347Q1237 351 1186 351Q1135 350 1090 329Q1045 307 1033 264Q1021 222 1042 181Q1063 140 1086 110Q1110 80 1126 53Q1142 26 1163 2Q1184 -23 1214 -41Q1244 -58 1278 -71Q1312 -84 1352 -94Q1391 -104 1433 -98Q1475 -92 1506 -68Q1537 -43 1559 -15Q1581 14 1607 42Q1634 69 1656 105zM1719.3 97.3Q1747 140 1738 187Q1729 235 1684 266Q1640 298 1591 313Q1542 328 1503 341Q1464 353 1427 363Q1390 374 1349 379Q1309 384 1261 390Q1213 396 1151 396Q1089 396 1033 370Q978 343 964 292Q951 240 978 190Q1005 140 1035 104Q1065 69 1084 37Q1103 5 1127 -25Q1151 -55 1187 -76Q1222 -98 1263 -114Q1304 -131 1352 -143Q1400 -156 1451 -149Q1502 -142 1539 -112Q1577 -83 1603 -47Q1629 -12 1660 21Q1692 55 1719 97zM1782 90.1Q1814 140 1804 195Q1794 251 1741 288Q1688 325 1630 341Q1572 358 1527 372Q1482 386 1439 399Q1396 412 1349 419Q1301 427 1245 434Q1188 442 1115 442Q1041 443 975 412Q909 381 894 319Q879 258 913 199Q947 140 985 99Q1023 58 1044 22Q1066 -15 1093 -51Q1119 -86 1160 -112Q1201 -138 1249 -158Q1296 -177 1353 -193Q1409 -208 1469 -201Q1529 -194 1574 -158Q1618 -123 1647 -81Q1677 -38 1713 1Q1750 40 1782 90z' fill='none' stroke='%231d6a3f' stroke-width='1.25' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  opacity: calc(var(--pattern-airsim) * var(--pattern-upright));
 }
 
 .sr-only {
@@ -99,10 +233,23 @@ body {
   text-wrap: balance;
 }
 
-/* The featured tile's name, pitch line and one action */
+/* The featured tile's name, selling points and one action */
 .info {
+  position: relative;
+  container-type: inline-size;
   border-top: 1px solid var(--line);
   padding-top: clamp(1rem, 3vh, 1.75rem);
+}
+/* A short stroke of the scene's accent on the rule */
+.info::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 3rem;
+  height: 2px;
+  background-color: var(--accent);
+  transition: background-color var(--scene-fade) var(--ease);
 }
 .eyebrow {
   margin: 0;
@@ -116,6 +263,7 @@ body {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.position { color: var(--deep); transition: color var(--scene-fade) var(--ease); }
 .state { display: inline-flex; align-items: center; gap: .5rem; }
 .state::before {
   content: "";
@@ -136,16 +284,57 @@ body {
   font-family: "Big Shoulders Display", Impact, sans-serif;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: clamp(3.25rem, 6.5vw, 6rem);
+  /* One line for the longest names; the container cap shrinks it only where it must */
+  font-size: min(clamp(3.25rem, 6.5vw, 6rem), 17cqi);
+  white-space: nowrap;
   line-height: .88;
   letter-spacing: .01em;
 }
-.pitch {
-  margin: 0 0 clamp(1rem, 3vh, 1.6rem);
-  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
-  line-height: 1.4;
-  max-width: 26rem;
+
+/* The selling points: three numbered rows, a large numeral in the scene's
+   accent and a strong line, with thin rules between. One line per row, sized
+   to the column, so the block has one height for every scene and the tile
+   never changes size when the carousel moves. */
+.points {
+  list-style: none;
+  margin: 0 0 clamp(1rem, 3vh, 1.75rem);
+  padding: 0;
+  display: grid;
+  gap: 0;
+  /* Width, column and height caps, so short desktop screens still fit */
+  font-size: min(clamp(1.05rem, 1.5vw, 1.4rem), 4.6cqi, 2.45vh);
+  line-height: 1.2;
 }
+.points li {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  padding: .3em 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.points li:last-child { border-bottom: 1px solid var(--line); }
+.point-num {
+  flex: none;
+  min-width: 1.35em;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-weight: 800;
+  font-size: 1.9em;
+  line-height: .9;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+/* site.js adds is-entering when the scene changes, not on the first paint */
+@keyframes point-in {
+  from { opacity: 0; transform: translateY(.45em); }
+}
+.points.is-entering li { animation: point-in 460ms var(--ease) both; }
+.points.is-entering li:nth-child(2) { animation-delay: var(--row-stagger); }
+.points.is-entering li:nth-child(3) { animation-delay: calc(2 * var(--row-stagger)); }
+
 .action {
   display: flex;
   flex-wrap: wrap;
@@ -209,17 +398,20 @@ body {
   text-decoration-thickness: 1px;
 }
 
-/* The carousel */
+/* The carousel. It reaches --halo-room past its column on both sides so the
+   featured tile's glow is not cut off; the track inside is the column itself,
+   and site.js sizes the tiles from the track. */
 .carousel {
   position: relative;
   min-height: 0;
   min-width: 0;
+  margin-inline: calc(-1 * var(--halo-room));
   overflow: hidden;
   --fade: calc(var(--peek) * .75);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
 }
-.track { position: absolute; inset: 0; }
+.track { position: absolute; inset: 0 var(--halo-room); }
 
 .tile {
   --o: 0;
@@ -236,13 +428,30 @@ body {
   background:
     radial-gradient(110% 90% at 18% 0%, var(--beam) 0%, transparent 62%),
     var(--screen);
-  box-shadow: 0 30px 60px -34px rgba(14, 34, 40, .55);
+  /* Neighbours sit lightly on the page. The same three shadows as the
+     featured tile, so the glow fades in and out when the carousel moves. */
+  box-shadow:
+    0 0 0 1px transparent,
+    0 0 var(--glow-blur) 0 transparent,
+    0 18px 34px -24px rgb(12 22 28 / .5);
   transform: translateY(calc(var(--o) * var(--shift, 0px))) scale(var(--s));
   opacity: 1;
   will-change: transform;
 }
+/* The featured tile sits above its neighbours, so nothing of theirs ever
+   paints over it or over a stream inside it. Its glow is outside its edge. */
+.tile[data-offset="0"] {
+  z-index: 1;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) var(--glow-edge), transparent),
+    0 0 var(--glow-blur) 0 color-mix(in srgb, var(--accent) var(--glow-halo), transparent),
+    0 26px 50px -24px rgb(12 22 28 / .6);
+}
 .carousel.is-ready .tile {
-  transition: transform var(--glide) var(--ease), opacity var(--glide) var(--ease);
+  transition:
+    transform var(--glide) var(--ease),
+    opacity var(--glide) var(--ease),
+    box-shadow var(--scene-fade) var(--ease);
 }
 .tile[data-offset="-1"], .tile[data-offset="1"] { --s: var(--scale); }
 .tile[data-offset="-2"], .tile[data-offset="2"] { --s: var(--scale); opacity: 0; }
@@ -302,8 +511,18 @@ body {
   transition: opacity var(--glide) var(--ease);
   pointer-events: none;
 }
-.tile[data-offset="-1"] .tile-label { bottom: 0; opacity: 1; }
-.tile[data-offset="1"] .tile-label { top: 0; opacity: 1; }
+/* A dark scrim behind the label, so the name reads over whatever the
+   preview shows, the game's own buttons included. Neighbours only. */
+.tile[data-offset="-1"] .tile-label {
+  bottom: 0; opacity: 1;
+  padding-top: 1.6rem;
+  background: linear-gradient(to top, var(--screen) 30%, transparent);
+}
+.tile[data-offset="1"] .tile-label {
+  top: 0; opacity: 1;
+  padding-bottom: 1.6rem;
+  background: linear-gradient(to bottom, var(--screen) 30%, transparent);
+}
 .tile-name {
   font-family: "Big Shoulders Display", Impact, sans-serif;
   font-weight: 800;
@@ -352,7 +571,7 @@ body {
 
 /* Phone upright, and any tall narrow window */
 @media (max-aspect-ratio: 1/1) and (max-width: 48rem) {
-  :root { --gap: 10px; --peek: 46px; --scale: 0.9; }
+  :root { --gap: 10px; --peek: 46px; --scale: 0.9; --halo-room: 1rem; --glow-blur: 16px; --pattern-upright: .7; }
   .page {
     gap: .7rem;
     padding:
@@ -379,7 +598,9 @@ body {
   .main {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: .7rem;
+    /* Tighter than the page gap: it pays for the icon rows, so the tile
+       keeps the size it had before them */
+    gap: .55rem;
   }
   .intro { display: contents; }
   .lead { order: 1; font-size: 1.02rem; line-height: 1.3; font-weight: 500; letter-spacing: -.005em; }
@@ -393,15 +614,24 @@ body {
     column-gap: 1rem;
     align-items: end;
   }
+  .info::before { display: none; }
   .eyebrow { grid-column: 1 / -1; font-size: .7rem; gap: .9rem; }
-  .name { grid-column: 1; font-size: 2.6rem; margin: .2em 0 .08em; }
-  /* Two lines always, so the tile keeps its size when the action changes */
-  .pitch { grid-column: 1; font-size: .98rem; margin: 0; line-height: 1.35; min-height: 2.7em; }
-  .action { grid-column: 2; grid-row: 2 / span 2; align-self: center; justify-content: flex-end; min-height: 0; }
+  .name { grid-column: 1; font-size: min(2.3rem, 8.8vw); margin: .2em 0 .08em; }
+  /* Name and action share a row; the rows run on beneath. Three rows for
+     every scene, so the tile keeps its size. */
+  .points {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    font-size: min(.92rem, 4.5cqi);
+    margin: .2rem 0 0;
+    gap: 3px;
+  }
+  .points li { gap: .5em; padding: .07em 0; }
+  .point-num { font-size: 1.3em; }
+  .action { grid-column: 2; grid-row: 2; align-self: center; justify-content: flex-end; min-height: 0; }
   .action:has(.busy-line) { grid-column: 1 / -1; grid-row: auto; margin-top: .4rem; justify-content: flex-start; }
-  .info:has(.busy-line) .pitch { min-height: 0; }
   .busy-line { font-size: .92rem; max-width: none; }
-  .consent { grid-column: 1 / -1; margin-top: .3rem; font-size: .8rem; }
+  .consent { grid-column: 1 / -1; margin-top: .35rem; font-size: .8rem; }
   .note { grid-column: 1 / -1; margin-top: .35rem; font-size: .88rem; min-height: 1.25em; }
   .note:empty { display: none; }
   .button { min-height: 2.9rem; min-width: 8.75rem; padding: 0 1.15rem; font-size: .95rem; }
@@ -411,7 +641,7 @@ body {
 
 /* Short landscape screens, such as a phone on its side */
 @media (min-aspect-ratio: 1/1) and (max-height: 34rem) {
-  :root { --gap: 8px; --peek: 26px; }
+  :root { --gap: 8px; --peek: 26px; --halo-room: 1.1rem; --glow-blur: 16px; }
   .page {
     gap: .5rem;
     padding:
@@ -421,13 +651,15 @@ body {
       calc(1.25rem + env(safe-area-inset-left, 0px));
   }
   .logo { font-size: 1.35rem; }
-  .main { grid-template-columns: minmax(15rem, 4fr) minmax(0, 7fr); gap: 1.5rem; }
-  .intro { gap: .9rem; }
+  .main { grid-template-columns: minmax(15rem, 5fr) minmax(0, 7fr); gap: 1.5rem; }
+  .intro { gap: .75rem; }
   .lead { font-size: 1.15rem; line-height: 1.2; }
-  .info { padding-top: .8rem; }
+  .info { padding-top: .65rem; }
   .eyebrow { font-size: .68rem; }
-  .name { font-size: 2.5rem; }
-  .pitch { font-size: .98rem; margin-bottom: .75rem; }
+  .name { font-size: 2.5rem; margin: .26em 0 .16em; }
+  .points { font-size: min(.9rem, 4.4cqi); margin-bottom: .6rem; gap: .15rem; }
+  .points li { gap: .5em; padding: .1em 0; }
+  .point-num { font-size: 1.4em; }
   .action { min-height: 2.6rem; }
   .button { min-height: 2.6rem; font-size: .92rem; padding: 0 1.1rem; }
   .consent { margin-top: .35rem; font-size: .78rem; }
@@ -439,6 +671,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --glide: 1ms; }
+  :root { --glide: 1ms; --scene-fade: 1ms; }
+  body, .backdrop, .info::before, .position { transition: none; }
+  .points.is-entering li { animation: none; }
   .preview .poster, .preview video, .button { transition: none; }
 }

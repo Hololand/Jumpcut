@@ -14,18 +14,27 @@ export const config = Object.freeze({
   // The tile in the middle when the page loads.
   featuredOnLoad: "hello",
 
-  // In carousel order, top to bottom.
+  // In carousel order, top to bottom. Each point is `{ text }`: one line, which shows beside
+  // its number (01, 02, 03).
   tiles: Object.freeze([
     {
       id: "lyra",
-      name: "Game",
-      pitch: "Play instantly, before the download finishes.",
+      name: "Video Games",
+      points: [
+        { text: "Play before the download finishes" },
+        { text: "Drives player acquisition" },
+        { text: "Safe from decompilation" },
+      ],
       media: { still: "media/game.svg" },
     },
     {
       id: "hello",
-      name: "Slot",
-      pitch: "Cinematic, instant time to fun.",
+      name: "iGaming",
+      points: [
+        { text: "Industry-leading quality" },
+        { text: "Instant time to fun" },
+        { text: "Tamper-proof by design" },
+      ],
       media: {
         still: "media/slot.svg",
         landscape: { video: "media/slot-landscape.mp4", poster: "media/slot-landscape.jpg" },
@@ -34,8 +43,12 @@ export const config = Object.freeze({
     },
     {
       id: "airsim",
-      name: "Drone",
-      pitch: "Secure, any device, no hardware.",
+      name: "Simulations",
+      points: [
+        { text: "Secure: nothing runs on the device" },
+        { text: "Anywhere with an internet connection" },
+        { text: "Any device, no special hardware" },
+      ],
       media: { still: "media/drone.svg" },
     },
   ]),
