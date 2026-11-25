@@ -191,7 +191,7 @@ function playPage() {
   body { display: grid; place-items: center; background: #183a40; color: #f3e7d3;
     font: 600 16px/1.2 system-ui, sans-serif; user-select: none; }
   .wrap { text-align: center; }
-  .n { display: grid; grid-template-columns: repeat(3, auto); gap: 6px 28px; margin: 14px 0 18px; }
+  .n { display: grid; grid-template-columns: repeat(4, auto); gap: 6px 28px; margin: 14px 0 18px; }
   .n b { font-size: clamp(28px, 8vmin, 72px); font-variant-numeric: tabular-nums; }
   .n span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
   button { font: inherit; padding: 10px 18px; border-radius: 999px; border: 0; background: #f3e7d3; color: #0e2228; cursor: pointer; }
@@ -199,13 +199,14 @@ function playPage() {
 <body><div class="wrap">
   <div>FAKE PLAY PAGE</div>
   <div class="n">
-    <b id="w">0</b><b id="t">0</b><b id="p">0</b>
-    <span>wheel</span><span>touch</span><span>pointer</span>
+    <b id="w">0</b><b id="t">0</b><b id="p">0</b><b id="k">0</b>
+    <span>wheel</span><span>touch</span><span>pointer</span><span>keys</span>
   </div>
   <button id="end" type="button">End with ${exitReason}</button>
 </div>
 <script>
-  const c = { w: 0, t: 0, p: 0 };
+  const c = { w: 0, t: 0, p: 0, k: 0 };
+  addEventListener("keydown", () => bump("k"));
   const bump = (k) => { c[k] += 1; document.getElementById(k).textContent = c[k]; };
   addEventListener("wheel", (e) => { e.preventDefault(); bump("w"); }, { passive: false });
   addEventListener("touchstart", () => bump("t"), { passive: true });
