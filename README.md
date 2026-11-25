@@ -91,6 +91,7 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | `--scene-fade`, `--row-stagger` | `site.css`, top of the file | 600ms, 60ms | How long a backdrop crossfade and glow change take, and the delay between the rows coming in |
 | `--peek`, `--gap`, `--scale` | `site.css` | per layout | How much of the neighbours shows, the space between tiles, their size |
 | `--glide` | `site.css` | 350ms | How long a move takes |
+| `--bar`, `--rail` | `site.css` | 3.4rem, 8.25rem | While a phone plays full-window: the height of the top bar (upright) and the width of the side rail (sideways) that hold End demo and Full screen |
 | Wheel threshold and quiet gap | `wheelStep` in `carousel-logic.js` | 24 px, 180 ms | What counts as one wheel gesture |
 | Swipe threshold | `swipeStep` in `carousel-logic.js` | 40 px | How far a finger travels for one step |
 
