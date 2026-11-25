@@ -451,6 +451,12 @@ function fullscreenElement() {
   return document.fullscreenElement || document.webkitFullscreenElement || null;
 }
 
+// Keys reach the stream only while the frame has focus. Pressing one of our
+// buttons takes focus away from it, so give it back.
+function focusFrame() {
+  if (s.frame && s.phase === "playing") s.frame.focus();
+}
+
 // Fullscreen goes on the tile, the frame's own parent, so the frame never moves.
 function goFullscreen() {
   const root = tileEls[s.index].root;
@@ -458,11 +464,21 @@ function goFullscreen() {
   if (!ask) return;
   try {
     const p = ask.call(root);
-    if (p && p.catch) p.catch(() => {});
+    focusFrame(); // at once, even if the browser never settles the request
+    if (p && p.then) p.then(focusFrame, focusFrame);
   } catch {
     // The browser refused: the stream carries on in its tile.
+    focusFrame();
   }
 }
+
+// Entering or leaving fullscreen (Esc, the browser's own control) resizes the
+// page and can re-render our buttons, so focus the frame once that has settled.
+function onFullscreenChange() {
+  requestAnimationFrame(focusFrame);
+}
+document.addEventListener("fullscreenchange", onFullscreenChange);
+document.addEventListener("webkitfullscreenchange", onFullscreenChange);
 
 function leaveFullscreen() {
   if (!fullscreenElement()) return;
