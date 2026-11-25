@@ -36,7 +36,7 @@ Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys,
 | `config.js` | Backend origins, sales address, timings and the tiles |
 | `ended.html`, `ended.js`, `ended.css` | Where a framed stream lands when it ends; reports the reason to the homepage |
 | `terms.html`, `terms.css` | Demo terms and credits, linked from the footer and from beside "Play now"; its own CSP allows no script |
-| `media/` | Tile stills (SVG, drawn for this site) and the slot's preview videos and posters when present |
+| `media/` | Tile stills (SVG, drawn for this site) and each tile's preview videos and posters when present |
 | `_dev/serve.mjs` | Local server and fake backend (not published) |
 | `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, the first paint of `index.html`, and the terms page and links (not published) |
 | `CNAME`, `favicon.ico`, `logo.png` | Domain and icons |
