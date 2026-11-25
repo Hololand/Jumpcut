@@ -25,7 +25,11 @@ export const config = Object.freeze({
         { text: "Drives player acquisition" },
         { text: "Safe from decompilation" },
       ],
-      media: { still: "media/game.svg" },
+      media: {
+        still: "media/game.svg",
+        landscape: { video: "media/game-landscape.mp4", poster: "media/game-landscape.jpg" },
+        portrait: { video: "media/game-portrait.mp4", poster: "media/game-portrait.jpg" },
+      },
     },
     {
       id: "hello",
@@ -49,7 +53,11 @@ export const config = Object.freeze({
         { text: "Anywhere with an internet connection" },
         { text: "Any device, no special hardware" },
       ],
-      media: { still: "media/drone.svg" },
+      media: {
+        still: "media/drone.svg",
+        landscape: { video: "media/drone-landscape.mp4", poster: "media/drone-landscape.jpg" },
+        portrait: { video: "media/drone-portrait.mp4", poster: "media/drone-portrait.jpg" },
+      },
     },
   ]),
 });
