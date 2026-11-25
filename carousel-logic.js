@@ -157,3 +157,15 @@ export function fitTile(box, mode, { gap = 16, peek = 56, scale = 0.84 } = {}) {
   const shift = h / 2 + gap + (h * scale) / 2;
   return { width: Math.round(w), height: Math.round(h), shift: Math.round(shift), scale };
 }
+
+// A phone shows a playing stream in the whole window: the stream plays and
+// one of the phone layouts is showing. A desktop keeps the tile in the carousel.
+export function playsInWindow(phase, phoneLayout) {
+  return phase === "playing" && phoneLayout === true;
+}
+
+// Whether the browser can put one element in fullscreen. iPhone Safari cannot,
+// and the button stays away there.
+export function fullscreenSupported(doc) {
+  return Boolean(doc && (doc.fullscreenEnabled || doc.webkitFullscreenEnabled));
+}

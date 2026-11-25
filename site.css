@@ -670,6 +670,148 @@ body[data-scene="airsim"] .backdrop-airsim { opacity: 1; }
   .foot { font-size: .78rem; padding-top: .45rem; flex-wrap: nowrap; }
 }
 
+/* Very short landscape screens, such as a phone on its side with the
+   browser's own bars showing (about 290 px of page). The footer steps aside
+   for the top bar's links, and the text column tightens, so the column, the
+   header and the tile all fit. The row is capped, so the carousel gets the
+   real height and fitTile centres the tile in it. */
+@media (min-aspect-ratio: 1/1) and (max-height: 24rem) {
+  .page {
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: .3rem;
+    padding-top: calc(.4rem + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(.4rem + env(safe-area-inset-bottom, 0px));
+  }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+  .logo { font-size: 1.15rem; }
+  .top-links { display: flex; align-items: baseline; gap: .9rem; margin: 0; }
+  .top-links a {
+    color: var(--ink);
+    font-size: .78rem;
+    font-weight: 500;
+    text-underline-offset: .2em;
+    text-decoration-thickness: 1px;
+    white-space: nowrap;
+  }
+  .top-links .top-terms { color: var(--muted); font-weight: 400; }
+  .top-links a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .foot { display: none; }
+  .main { grid-template-rows: minmax(0, 1fr); gap: 1.25rem; }
+  .intro { gap: .35rem; min-height: 0; }
+  .lead { font-size: .9rem; line-height: 1.15; }
+  .info { padding-top: .35rem; }
+  .eyebrow { font-size: .6rem; gap: .7rem; }
+  .name { font-size: 1.8rem; margin: .12em 0 .08em; }
+  .points { font-size: min(.78rem, 4.4cqi); margin-bottom: .35rem; }
+  .points li { padding: .04em 0; }
+  .point-num { font-size: 1.2em; }
+  .action, .button { min-height: 2.2rem; }
+  .button { font-size: .85rem; padding: 0 .95rem; }
+  .consent { margin-top: .2rem; font-size: .68rem; line-height: 1.25; }
+  .note { margin-top: .2rem; font-size: .78rem; min-height: 0; }
+  .note:empty { display: none; }
+}
+
+/* Playing on a phone. site.js sets body.play-window while a stream plays and
+   a phone layout shows. The featured tile is fixed to the window, with one
+   slim control area beside it: a bar on top when upright, a rail on the left
+   when sideways. The control area and the tile never overlap, so nothing sits
+   over the video. Only CSS changes, so the frame is never moved or reloaded.
+   The ancestors' mask and clip are lifted here, or they would cut the fixed tile. */
+body.play-window .top,
+body.play-window .lead,
+body.play-window .eyebrow,
+body.play-window .name,
+body.play-window .points,
+body.play-window .consent,
+body.play-window .note,
+body.play-window .foot,
+body.play-window .tile:not([data-offset="0"]),
+body.play-window .tile-label { display: none; }
+body.play-window .carousel {
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+body.play-window .info {
+  container-type: normal;
+  border: 0;
+  padding: 0;
+}
+body.play-window .info::before { display: none; }
+body.play-window .tile[data-offset="0"] {
+  position: fixed;
+  left: var(--win-left);
+  top: var(--win-top);
+  right: var(--win-right);
+  bottom: var(--win-bottom);
+  width: auto;
+  height: auto;
+  margin: 0;
+  transform: none;
+  transition: none;
+  will-change: auto;
+  border-radius: 0;
+  box-shadow: none;
+  z-index: 2;
+}
+body.play-window .action {
+  position: fixed;
+  z-index: 3;
+  display: flex;
+  gap: .5rem;
+  min-height: 0;
+  background: var(--ground);
+}
+body.play-window .action .button { min-height: 2.4rem; min-width: 0; padding: 0 1rem; font-size: .9rem; }
+
+@media (max-aspect-ratio: 1/1) and (max-width: 48rem) {
+  body.play-window {
+    --bar: 3.4rem;
+    --win-left: env(safe-area-inset-left, 0px);
+    --win-right: env(safe-area-inset-right, 0px);
+    --win-top: calc(var(--bar) + env(safe-area-inset-top, 0px));
+    --win-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  body.play-window .action {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: calc(var(--bar) + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) calc(.75rem + env(safe-area-inset-right, 0px)) 0 calc(.75rem + env(safe-area-inset-left, 0px));
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-height: 34rem) {
+  body.play-window {
+    --rail: 8.25rem;
+    --win-left: calc(var(--rail) + env(safe-area-inset-left, 0px));
+    --win-right: env(safe-area-inset-right, 0px);
+    --win-top: 0px;
+    --win-bottom: 0px;
+  }
+  body.play-window .action {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: calc(var(--rail) + env(safe-area-inset-left, 0px));
+    padding: .5rem .5rem .5rem calc(.5rem + env(safe-area-inset-left, 0px));
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: .6rem;
+  }
+  body.play-window .action .button { padding: 0 .6rem; font-size: .82rem; gap: .45rem; }
+}
+
+/* A tile in the browser's own fullscreen: the stream fills the screen. The
+   browser's fixed rules do the sizing; this only drops the frame's looks. */
+.tile:fullscreen { border-radius: 0; box-shadow: none; }
+.tile:-webkit-full-screen { border-radius: 0; box-shadow: none; }
+
 @media (prefers-reduced-motion: reduce) {
   :root { --glide: 1ms; --scene-fade: 1ms; }
   body, .backdrop, .info::before, .position { transition: none; }

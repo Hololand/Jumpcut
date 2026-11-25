@@ -23,6 +23,7 @@ const el = {
 };
 
 const portraitQuery = matchMedia("(max-aspect-ratio: 1/1) and (max-width: 48rem)");
+const shortQuery = matchMedia("(min-aspect-ratio: 1/1) and (max-height: 34rem)");
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 const STATE_TEXT = {
@@ -45,6 +46,7 @@ const s = {
   index: L.clampIndex(Math.max(0, ids.indexOf(config.featuredOnLoad)), tiles.length),
   states: L.readStatus(0, null, ids),
   phase: "preview", // preview, launching or playing
+  windowed: false, // a phone playing: the tile fills the window (CSS keys on body.play-window)
   note: "",
   mode: portraitQuery.matches ? "portrait" : "landscape",
   wheel: L.createWheelState(),
@@ -100,8 +102,14 @@ const tileEls = tiles.map((tile, i) => {
 
 // ---------- rendering ----------
 
+function updateWindowed() {
+  s.windowed = L.playsInWindow(s.phase, portraitQuery.matches || shortQuery.matches);
+  document.body.classList.toggle("play-window", s.windowed);
+}
+
 function render() {
   const featured = tiles[s.index];
+  updateWindowed();
   tileEls.forEach((t, i) => {
     const offset = L.slotOffset(i, s.index);
     t.root.dataset.offset = String(offset);
@@ -161,6 +169,9 @@ function renderAction(tile) {
   const nodes = [];
   if (s.phase === "playing") {
     nodes.push(button("End demo", endDemo, "button button-quiet", ICON_STOP));
+    if (L.fullscreenSupported(document)) {
+      nodes.push(button("Full screen", goFullscreen, "button button-quiet", ICON_FULL));
+    }
   } else if (s.phase === "launching") {
     const b = button("Starting", null, "button", ICON_PLAY);
     b.disabled = true;
@@ -189,6 +200,7 @@ function renderAction(tile) {
 
 const ICON_PLAY = "M2 1 L14 8 L2 15 Z";
 const ICON_STOP = "M2 2 H14 V14 H2 Z";
+const ICON_FULL = "M1 1H6V3H3V6H1Z M10 1H15V6H13V3H10Z M1 10H3V13H6V15H1Z M13 10H15V15H10V13H13Z";
 
 function button(text, onClick, className, iconPath) {
   const b = document.createElement("button");
@@ -328,7 +340,7 @@ function playingOn(target) {
 addEventListener("wheel", (e) => {
   if (e.ctrlKey) return; // pinch zoom on a trackpad
   e.preventDefault();
-  if (playingOn(e.target)) return;
+  if (s.windowed || playingOn(e.target)) return;
   const vertical = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : 0;
   const r = L.wheelStep(s.wheel, {
     deltaY: L.wheelPixels(vertical, e.deltaMode, innerHeight),
@@ -341,7 +353,7 @@ addEventListener("wheel", (e) => {
 addEventListener("touchstart", (e) => {
   if (e.touches.length !== 1) { s.touch = null; return; }
   const t = e.touches[0];
-  s.touch = { x: t.clientX, y: t.clientY, ignore: playingOn(e.target) };
+  s.touch = { x: t.clientX, y: t.clientY, ignore: s.windowed || playingOn(e.target) };
 }, { passive: true });
 
 addEventListener("touchmove", (e) => {
@@ -365,6 +377,7 @@ addEventListener("keydown", (e) => {
   const step = L.keyStep(e.key);
   if (!step) return;
   e.preventDefault();
+  if (s.windowed) return; // End demo is the way out of a full-window stream
   move(step);
 });
 
@@ -434,7 +447,36 @@ function removeFrame() {
   }
 }
 
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+// Fullscreen goes on the tile, the frame's own parent, so the frame never moves.
+function goFullscreen() {
+  const root = tileEls[s.index].root;
+  const ask = root.requestFullscreen || root.webkitRequestFullscreen;
+  if (!ask) return;
+  try {
+    const p = ask.call(root);
+    if (p && p.catch) p.catch(() => {});
+  } catch {
+    // The browser refused: the stream carries on in its tile.
+  }
+}
+
+function leaveFullscreen() {
+  if (!fullscreenElement()) return;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  try {
+    const p = exit && exit.call(document);
+    if (p && p.catch) p.catch(() => {});
+  } catch {
+    // Already out.
+  }
+}
+
 function stopStream() {
+  leaveFullscreen();
   if (s.launchCtl) {
     const ctl = s.launchCtl;
     s.launchCtl = null;
@@ -512,7 +554,8 @@ document.addEventListener("visibilitychange", () => {
 // ---------- start ----------
 
 new ResizeObserver(layout).observe(el.carousel);
-portraitQuery.addEventListener("change", layout);
+portraitQuery.addEventListener("change", () => { layout(); render(); });
+shortQuery.addEventListener("change", render);
 reducedMotion.addEventListener("change", renderMedia);
 layout();
 render();
