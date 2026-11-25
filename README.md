@@ -13,7 +13,9 @@ The front door for iGaming operators, game studios and simulation teams. Three d
 3. While the tab is visible, the page asks `GET https://rgs.jumpcut.cloud/v0/demo/status` for the demos' states, at once and then every 20 seconds. Anything unexpected reads as offline.
 4. Each tile shows a preview and one action: "Play now" when its demo is online, a busy line when every seat is taken, and "Request a demo" (an email to sales) otherwise.
 5. Nothing starts on its own. "Play now" sends `POST https://rgs.jumpcut.cloud/v0/demo/launch` with the game's id. The answer's `launchUrl` is framed only when its origin is exactly `https://play.jumpcut.cloud`. The framed page shows its own loading screen, then the game.
-6. Nothing of ours is drawn over a playing stream. Its controls ("End demo") sit beside it.
+6. Nothing of ours is drawn over a playing stream. Its controls ("End demo", and "Full screen" where the browser offers the Fullscreen API) sit beside it.
+6a. On a phone (the upright and short-landscape layouts), a playing stream takes over the window. The header, headline, info text, neighbours and footer step aside, and the featured tile is fixed to the window with one slim control area: a bar on top when upright, a rail on the left when sideways. The bar and rail never overlap the stream, and the safe-area insets are kept. Upright, the stream is taller than wide, so the game draws its phone layout. Only CSS changes (`body.play-window`, set by `site.js`), so rotating the phone swaps bar and rail without reloading the frame. While it plays, no wheel, swipe or key moves the carousel; "End demo" is the way out. A desktop keeps the stream in its tile.
+6b. "Full screen" puts the featured tile (the frame's own parent, so the frame never moves) in the browser's fullscreen. Esc or the browser's controls leave it, and a stream that ends or "End demo" leaves it first.
 7. Removing the frame ends the stream: the framed page notices it is unloading and ends its own session. That happens on "End demo" and whenever another tile moves into the middle.
 8. When a stream ends for its own reasons, the framed page loads `ended.html?cpExit=<reason>`. That page tells the homepage through `postMessage`, and the homepage removes the frame and shows the preview again.
 9. Wherever "Play now" shows, one small line under it reads "By playing you accept the demo terms", linking to `terms.html`. It shows only with "Play now", never while a demo starts or plays. A "Terms and credits" link is always present: in the footer, and in the top bar on a phone held upright, where the footer is hidden.
@@ -89,6 +91,7 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | `--scene-fade`, `--row-stagger` | `site.css`, top of the file | 600ms, 60ms | How long a backdrop crossfade and glow change take, and the delay between the rows coming in |
 | `--peek`, `--gap`, `--scale` | `site.css` | per layout | How much of the neighbours shows, the space between tiles, their size |
 | `--glide` | `site.css` | 350ms | How long a move takes |
+| `--bar`, `--rail` | `site.css` | 3.4rem, 8.25rem | While a phone plays full-window: the height of the top bar (upright) and the width of the side rail (sideways) that hold End demo and Full screen |
 | Wheel threshold and quiet gap | `wheelStep` in `carousel-logic.js` | 24 px, 180 ms | What counts as one wheel gesture |
 | Swipe threshold | `swipeStep` in `carousel-logic.js` | 40 px | How far a finger travels for one step |
 
@@ -102,6 +105,8 @@ This repo is public. It never holds a key, token, password, account number, inte
 
 ## Known limits
 
+- iPhone Safari has no fullscreen for an element, so "Full screen" does not show there. The full-window play fills the page area instead, and Safari's own bars stay.
+- Under 24 rem of height (a phone on its side with Safari's bars showing) the footer gives way to the top bar's Terms and email links, and the text column tightens.
 - Video Games and Simulations are live demos but show a still, not a video: their preview clips are not made yet.
 - The selling points are three one-line rows on every layout, so the tile keeps its size between scenes. A longer point must still fit one line at 360 px wide, and a fourth one needs the tile's room rechecked on upright phones.
 - The backdrop patterns are fixed drawings inside `site.css`. Their strength is a tweak point; changing their shape means new SVG path data.

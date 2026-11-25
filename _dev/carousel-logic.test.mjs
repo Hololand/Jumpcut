@@ -239,3 +239,19 @@ test("index.html's first paint shows the featured scene", async () => {
   for (const t of config.tiles) assert.match(layers, new RegExp(`class="backdrop backdrop-${t.id}"`), t.id);
 });
 
+
+test("a phone plays in the whole window only while a stream plays on a phone layout", () => {
+  assert.equal(L.playsInWindow("playing", true), true);
+  assert.equal(L.playsInWindow("playing", false), false);
+  assert.equal(L.playsInWindow("launching", true), false);
+  assert.equal(L.playsInWindow("preview", true), false);
+  assert.equal(L.playsInWindow("playing", undefined), false);
+});
+
+test("the Full screen button needs the Fullscreen API, prefixed or not", () => {
+  assert.equal(L.fullscreenSupported({ fullscreenEnabled: true }), true);
+  assert.equal(L.fullscreenSupported({ webkitFullscreenEnabled: true }), true);
+  assert.equal(L.fullscreenSupported({ fullscreenEnabled: false }), false);
+  assert.equal(L.fullscreenSupported({}), false);
+  assert.equal(L.fullscreenSupported(null), false);
+});
