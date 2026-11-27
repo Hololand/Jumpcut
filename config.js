@@ -11,6 +11,17 @@ export const config = Object.freeze({
   statusTimeoutMs: 8000,
   launchTimeoutMs: 15000,
 
+  // Connect before the click (Phase 7 speed). When true, a featured tile that
+  // is online and whose status says warm makes the launch call and loads its
+  // stream under the poster after armDwellMs, and Play now only reveals it.
+  // That changes the Phase 6 rule "Nothing starts on its own", and every
+  // visitor resting on a warm tile then holds a seat, so switching it on is
+  // Holland's decision. Off, the page behaves exactly as before.
+  connectBeforeClick: false,
+  // How long a warm tile must stay featured before it arms. Only read when
+  // connectBeforeClick is true.
+  armDwellMs: 1500,
+
   // The tile in the middle when the page loads.
   featuredOnLoad: "hello",
 

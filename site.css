@@ -495,6 +495,13 @@ body[data-scene="airsim"] .backdrop-airsim { opacity: 1; }
   display: block;
   background: var(--screen);
 }
+/* Connect before the click (config.connectBeforeClick, off by default). An
+   armed frame is put in the stage before the preview, so the preview and its
+   poster paint over it, and it takes no pointer (site.js also makes it inert,
+   so no focus or key reaches it). The press lifts it over the preview in
+   place: moving an iframe in the DOM would reload it. */
+.stage iframe.is-armed { pointer-events: none; }
+.stage iframe.is-lifted { z-index: 1; }
 
 /* A neighbour's name sits on the edge nearest the middle, so it reads in the peek */
 .tile-label {
