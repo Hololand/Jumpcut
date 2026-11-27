@@ -174,13 +174,54 @@ test("disarm: another tile moves into the middle", () => {
   assert.deepEqual(d.send({ type: "sync" }, { featured: "lyra", warm: false }), ["abortLaunch"]);
 });
 
-test("disarm: offline or busy before the press removes the frame", () => {
-  for (const state of ["offline", "busy"]) {
-    const m = machine();
-    m.armUp();
-    assert.deepEqual(m.send({ type: "sync" }, { state }), ["removeFrame"], state);
-    assert.deepEqual(m.send({ type: "sync" }, { state: "online" }), [], `${state}: no re-arm in this visit`);
-  }
+test("disarm: offline before the press removes the armed frame, with no re-arm in this visit", () => {
+  const m = machine();
+  m.armUp();
+  assert.deepEqual(m.send({ type: "sync" }, { state: "offline" }), ["removeFrame"]);
+  assert.deepEqual(m.send({ type: "sync" }, { state: "online" }), [], "no re-arm in this visit");
+});
+
+test("busy does not disarm an armed frame, which holds its own seat, and a press still reveals it", () => {
+  const m = machine();
+  m.armUp();
+  assert.deepEqual(m.send({ type: "sync" }, { state: "busy", warm: false }), []);
+  assert.equal(m.arm.stage, "armed");
+  assert.deepEqual(m.send({ type: "press" }), ["reveal"]);
+  assert.equal(m.effects.filter((fx) => fx === "launch").length, 1, "no second launch");
+});
+
+test("busy still stops a dwell or an arming launch call that has made no frame", () => {
+  const d = machine();
+  d.send({ type: "sync" });
+  assert.deepEqual(d.send({ type: "sync" }, { state: "busy" }), ["clearTimer"]);
+  const l = machine();
+  l.send({ type: "sync" });
+  l.send({ type: "dwell" });
+  assert.deepEqual(l.send({ type: "sync" }, { state: "busy" }), ["abortLaunch"]);
+});
+
+test("shownState: busy over this visitor's armed tile shows online; everything else shows the status", () => {
+  const m = machine();
+  m.armUp();
+  assert.equal(A.shownState(m.arm, "hello", "busy"), "online");
+  assert.equal(A.shownState(m.arm, "hello", "offline"), "offline");
+  assert.equal(A.shownState(m.arm, "airsim", "busy"), "busy", "another tile");
+  const idle = A.createArm();
+  for (const state of ["online", "busy", "offline"]) assert.equal(A.shownState(idle, "hello", state), state);
+  const dwell = machine();
+  dwell.send({ type: "sync" });
+  assert.equal(A.shownState(dwell.arm, "hello", "busy"), "busy", "no frame yet");
+});
+
+test("site.js: the tile's label, action, consent and the press all read the shown state", async () => {
+  const src = await read("site.js");
+  assert.match(src, /function shownState\(id\) \{\n\s*return A\.shownState\(arm, id, s\.states\[id\]\);/);
+  assert.match(src, /const state = shownState\(tile\.id\);/);
+  assert.match(src, /s\.phase !== "preview" \|\| shownState\(tile\.id\) !== "online"\) return;/);
+  assert.match(src, /L\.showsConsent\(s\.phase, shownState\(featured\.id\)\)/);
+  assert.match(src, /function render\(\) \{\n(\s*\/\/[^\n]*\n)*\s*armEvent\(\{ type: "sync" \}\);/, "the arming syncs first");
+  // armView reads the status itself, so busy reaches the rules.
+  assert.match(src, /state: s\.states\[id\],/);
 });
 
 test("warm turning false does not tear down an armed frame, which holds the seat", () => {

@@ -106,13 +106,17 @@ export function armStep(arm, event, view) {
 
   // sync
   if (a.stage === "launching" || a.stage === "armed") {
-    // warm counts only until the frame exists: an armed frame holds the seat
-    // that made it true, so warm turning false is no reason to let it go.
-    // While the launch call is out no seat is held yet, and a stream request
-    // with no warm seat would only be refused.
-    const lost = view.hidden === true || view.state !== "online" ||
-      view.phase !== "preview" || view.framed === true ||
-      (a.stage === "launching" && view.warm !== true);
+    // Busy and warm count only until the frame exists. An armed frame holds
+    // its own seat, so busy is expected (on a one-seat pool it is certain)
+    // and warm turning false is the same seat seen from the other side:
+    // neither lets it go. Only offline, a hidden tab, leaving the middle or
+    // cp-ended does. While the launch call is out no seat is held yet, and a
+    // stream request with no warm seat would only be refused.
+    const blocked = a.stage === "armed"
+      ? view.state === "offline"
+      : view.state !== "online" || view.warm !== true;
+    const lost = blocked || view.hidden === true ||
+      view.phase !== "preview" || view.framed === true;
     if (lost) {
       fx.push(...teardown(a.stage));
       a.stage = "idle";
@@ -127,6 +131,14 @@ export function armStep(arm, event, view) {
     fx.push("startTimer");
   }
   return { arm: a, effects: fx };
+}
+
+// The state a tile shows the visitor. A busy status over the tile whose
+// frame is armed is this visitor's own seat, so the tile keeps its poster
+// and "Play now", and a press reveals the frame. Every other case shows the
+// status as it is, so with the switch off nothing changes.
+export function shownState(arm, id, state) {
+  return arm && arm.stage === "armed" && arm.visit === id && state === "busy" ? "online" : state;
 }
 
 // Each game's warm flag from one status answer. Only the boolean true counts:

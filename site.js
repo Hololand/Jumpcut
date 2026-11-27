@@ -110,6 +110,8 @@ function updateWindowed() {
 }
 
 function render() {
+  // First, so what the tile shows below reads the arming as it now stands.
+  armEvent({ type: "sync" });
   const featured = tiles[s.index];
   updateWindowed();
   tileEls.forEach((t, i) => {
@@ -119,10 +121,10 @@ function render() {
     t.root.inert = far;
     t.root.setAttribute("aria-hidden", far ? "true" : "false");
     t.pick.hidden = offset === 0;
-    t.state.textContent = STATE_TEXT[s.states[tiles[i].id]];
+    t.state.textContent = STATE_TEXT[shownState(tiles[i].id)];
   });
 
-  const shown = s.phase === "preview" ? s.states[featured.id] : s.phase;
+  const shown = s.phase === "preview" ? shownState(featured.id) : s.phase;
   el.position.textContent = L.positionLabel(s.index, tiles.length);
   el.state.dataset.state = shown === "launching" ? "playing" : shown;
   el.state.textContent = STATE_TEXT[shown];
@@ -133,7 +135,7 @@ function render() {
   el.note.textContent = s.note;
   renderAction(featured);
   // The terms line goes with Play now and nothing else, so never with a stream.
-  el.consent.classList.toggle("is-on", L.showsConsent(s.phase, s.states[featured.id]));
+  el.consent.classList.toggle("is-on", L.showsConsent(s.phase, shownState(featured.id)));
   renderMedia();
   renderHints(false);
 
@@ -142,7 +144,13 @@ function render() {
     s.announced = line;
     el.announce.textContent = line;
   }
-  armEvent({ type: "sync" });
+}
+
+// A tile's state as the visitor sees it: the status, except that a busy
+// status over this visitor's own armed seat still shows "Play now"
+// (A.shownState). With the switch off it is the status itself.
+function shownState(id) {
+  return A.shownState(arm, id, s.states[id]);
 }
 
 // The resource hints for the featured tile (L.warmHints): a preconnect to
@@ -192,7 +200,7 @@ function renderPoints(tile) {
 
 function renderAction(tile) {
   const hadFocus = el.action.contains(document.activeElement);
-  const state = s.states[tile.id];
+  const state = shownState(tile.id);
   const nodes = [];
   if (s.phase === "playing") {
     nodes.push(button("End demo", endDemo, "button button-quiet", ICON_STOP));
@@ -414,7 +422,7 @@ async function play() {
   // The visitor's click, for the play page's click-to-first-frame clock.
   const clickedAt = Date.now();
   const tile = tiles[s.index];
-  if (s.phase !== "preview" || s.states[tile.id] !== "online") return;
+  if (s.phase !== "preview" || shownState(tile.id) !== "online") return;
   // A stream already waiting under the poster is only revealed: no second
   // launch. Anything else of the arming (a dwell, a launch in flight) is
   // undone, and the press goes on as it always has.
