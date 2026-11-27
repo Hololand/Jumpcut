@@ -133,12 +133,36 @@ function render() {
   // The terms line goes with Play now and nothing else, so never with a stream.
   el.consent.classList.toggle("is-on", L.showsConsent(s.phase, s.states[featured.id]));
   renderMedia();
+  renderHints(false);
 
   const line = `${featured.name}, ${s.index + 1} of ${tiles.length}. ${STATE_TEXT[shown]}.`;
   if (line !== s.announced) {
     s.announced = line;
     el.announce.textContent = line;
   }
+}
+
+// The resource hints for the featured tile (L.warmHints): a preconnect to
+// the play page while it is online, gone otherwise. They warm a connection
+// and start nothing. A browser drops a preconnected connection it does not
+// use, so each status read puts the hint in again (refresh), which asks for
+// a fresh one.
+let hintEls = [];
+
+function renderHints(refresh) {
+  const want = L.warmHints(s.phase, s.states[tiles[s.index].id], config.playOrigin);
+  const key = (h) => `${h.rel} ${h.href}`;
+  const same = want.length === hintEls.length && want.every((h, i) => key(h) === hintEls[i].dataset.key);
+  if (same && !refresh) return;
+  for (const link of hintEls) link.remove();
+  hintEls = want.map((h) => {
+    const link = document.createElement("link");
+    link.rel = h.rel;
+    link.href = h.href;
+    link.dataset.key = key(h);
+    document.head.append(link);
+    return link;
+  });
 }
 
 // The selling points, rebuilt only when the featured scene changes, so a
@@ -384,6 +408,8 @@ addEventListener("keydown", (e) => {
 // ---------- the stream ----------
 
 async function play() {
+  // The visitor's click, for the play page's click-to-first-frame clock.
+  const clickedAt = Date.now();
   const tile = tiles[s.index];
   if (s.phase !== "preview" || s.states[tile.id] !== "online") return;
   s.phase = "launching";
@@ -416,7 +442,7 @@ async function play() {
 
   const out = L.launchOutcome(status, body, config.playOrigin);
   if (out.kind === "play") {
-    startFrame(out.url, tile);
+    startFrame(out.url, tile, clickedAt);
     return;
   }
   s.phase = "preview";
@@ -426,11 +452,18 @@ async function play() {
   render();
 }
 
-function startFrame(url, tile) {
+function startFrame(url, tile, clickedAt) {
   removeFrame();
   const frame = document.createElement("iframe");
   frame.title = `${tile.name} demo, live stream`;
   frame.allow = "autoplay; fullscreen; gamepad";
+  // Once the play page has loaded, tell it when the visitor clicked. Only the
+  // play origin can receive it, so if the frame has already moved on (to
+  // ended.html) the message goes nowhere. It carries a time and nothing else.
+  frame.addEventListener("load", () => {
+    if (s.frame !== frame || !frame.contentWindow) return;
+    frame.contentWindow.postMessage(L.clickMessage(clickedAt), config.playOrigin);
+  }, { once: true });
   frame.src = url;
   s.frame = frame;
   s.phase = "playing";
@@ -553,6 +586,7 @@ async function poll() {
   s.pollCtl = null;
   s.states = L.readStatus(status, body, ids);
   render();
+  renderHints(true);
   if (!document.hidden) s.pollTimer = setTimeout(poll, config.pollIntervalMs);
 }
 

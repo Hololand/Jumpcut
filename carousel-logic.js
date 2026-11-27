@@ -72,6 +72,35 @@ export function launchOutcome(httpStatus, body, playOrigin) {
   return { kind: "failed" };
 }
 
+// Resource hints that get the browser ready before the click, and nothing
+// more: no launch, no ticket, no stream request, no frame. Only while the
+// featured tile is online and still shows its preview. One hint: a
+// preconnect to the play page's origin, so the frame's first request finds
+// a warm connection. The frame shares this page's top-level site, so the
+// connection is in the same partition. Checked on MDN, 27 November 2026:
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/preconnect
+// and, for partitioning, .../Web/Privacy/Guides/State_Partitioning.
+// No preload, modulepreload or prefetch of the play page's script. Its HTML
+// and config are no-store, which no cache may store
+// (.../Web/HTTP/Reference/Headers/Cache-Control). Its script and the SDK may
+// be served no-store, or under content-hashed names with a long cache life,
+// depending on the stack's release. Either way this page cannot name them:
+// the hashed names are known only to the play page's own HTML, which
+// already preloads them all in one round. A modulepreload here would also
+// fill this document's module map, which the frame does not share.
+export function warmHints(phase, state, playOrigin) {
+  if (phase !== "preview" || state !== "online") return [];
+  if (typeof playOrigin !== "string" || !/^https?:\/\/[^/]+$/.test(playOrigin)) return [];
+  return [{ rel: "preconnect", href: playOrigin }];
+}
+
+// What the homepage tells the frame once it has loaded: the time the
+// visitor pressed Play now, so the play page can time the click to its
+// first frame. A time and nothing else.
+export function clickMessage(at) {
+  return { type: "cp-click", at };
+}
+
 // The "By playing you accept the demo terms" line goes with Play now only:
 // a preview of an online demo. Never while launching or over a stream.
 export function showsConsent(phase, state) {

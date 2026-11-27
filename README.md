@@ -13,6 +13,8 @@ The front door for iGaming operators, game studios and simulation teams. Three d
 3. While the tab is visible, the page asks `GET https://rgs.jumpcut.cloud/v0/demo/status` for the demos' states, at once and then every 20 seconds. Anything unexpected reads as offline.
 4. Each tile shows a preview and one action: "Play now" when its demo is online, a busy line when every seat is taken, and "Request a demo" (an email to sales) otherwise.
 5. Nothing starts on its own. "Play now" sends `POST https://rgs.jumpcut.cloud/v0/demo/launch` with the game's id. The answer's `launchUrl` is framed only when its origin is exactly `https://play.jumpcut.cloud`. The framed page shows its own loading screen, then the game.
+5a. Ready before the click. While the featured tile is online and shows its preview, the page adds one `<link rel="preconnect">` to `playOrigin`, so the frame's first request finds a warm connection. Each status read puts it in again, because a browser drops a connection it does not use. It starts nothing: no launch, no ticket, no stream, no frame. The homepage adds only this `preconnect`. There is no `preload`, `prefetch` or `modulepreload` of the play page's script. Its HTML and config are sent `no-store`. Its script and the SDK may be sent `no-store` or under content-hashed names with a long cache life, depending on the stack's release. Either way the hashed names are known only to the play page's own HTML, which already preloads them all in one round. A `modulepreload` here would also fill this page's module map, not the frame's. The rule is `warmHints` in `carousel-logic.js`.
+5b. The click clock. "Play now" notes `Date.now()` the moment it is pressed. When the frame has loaded, the page posts `{ type: "cp-click", at }` to it, with `playOrigin` as the target, so the play page can time the click to its first frame. The message carries a time and nothing else. The play page believes it only when its own `CP_PAGE_CLICK_ORIGINS` names this site.
 6. Nothing of ours is drawn over a playing stream. Its controls ("End demo", and "Full screen" where the browser offers the Fullscreen API) sit beside it.
 6a. On a phone (the upright and short-landscape layouts), a playing stream takes over the window. The header, headline, info text, neighbours and footer step aside, and the featured tile is fixed to the window with one slim control area: a bar on top when upright, a rail on the left when sideways. The bar and rail never overlap the stream, and the safe-area insets are kept. Upright, the stream is taller than wide, so the game draws its phone layout. Only CSS changes (`body.play-window`, set by `site.js`), so rotating the phone swaps bar and rail without reloading the frame. While it plays, no wheel, swipe or key moves the carousel; "End demo" is the way out. A desktop keeps the stream in its tile.
 6b. "Full screen" puts the featured tile (the frame's own parent, so the frame never moves) in the browser's fullscreen. Esc or the browser's controls leave it, and a stream that ends or "End demo" leaves it first.
@@ -38,7 +40,7 @@ Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys,
 | `terms.html`, `terms.css` | Demo terms and credits, linked from the footer and from beside "Play now"; its own CSP allows no script |
 | `media/` | Tile stills (SVG, drawn for this site) and each tile's preview videos and posters when present |
 | `_dev/serve.mjs` | Local server and fake backend (not published) |
-| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, the first paint of `index.html`, and the terms page and links (not published) |
+| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, the first paint of `index.html`, the terms page and links, and the hints and click message before and at the click (`prewarm.test.mjs`, which also reads `site.js` to check the launch call runs only from "Play now") (not published) |
 | `CNAME`, `favicon.ico`, `logo.png` | Domain and icons |
 
 ## How to run
@@ -75,7 +77,7 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | Setting | Where | Default | Effect |
 | --- | --- | --- | --- |
 | `rgsOrigin` | `config.js` | `https://rgs.jumpcut.cloud` | Where status and launch go. Also in the CSP `connect-src` in `index.html` |
-| `playOrigin` | `config.js` | `https://play.jumpcut.cloud` | The only origin a launch URL may have. Also in the CSP `frame-src` |
+| `playOrigin` | `config.js` | `https://play.jumpcut.cloud` | The only origin a launch URL may have. Also in the CSP `frame-src`, the target of the preconnect hint and of the `cp-click` message |
 | `salesEmail` | `config.js` | `sales@jumpcut.cloud` | Where "Request a demo" goes |
 | `pollIntervalMs` | `config.js` | 20000 | How often the status is read while the tab is visible |
 | `statusTimeoutMs`, `launchTimeoutMs` | `config.js` | 8000, 15000 | When a status read or launch counts as failed |
@@ -110,4 +112,6 @@ This repo is public. It never holds a key, token, password, account number, inte
 - Video Games and Simulations are live demos but show a still, not a video: their preview clips are not made yet.
 - The selling points are three one-line rows on every layout, so the tile keeps its size between scenes. A longer point must still fit one line at 360 px wide, and a fourth one needs the tile's room rechecked on upright phones.
 - The backdrop patterns are fixed drawings inside `site.css`. Their strength is a tweak point; changing their shape means new SVG path data.
+- The preconnect warms only the connection. The play page's HTML and config load after the click, because they are sent `no-store`. Its script and the SDK load after the click too, unless the browser kept them from an earlier visit, which a stack release that serves them under hashed names with a long cache life allows.
+- `prewarm.test.mjs` checks `site.js` by reading its source, not in a browser. A browser check against the fake backend (`/_dev/log` shows no launch before the click) is still to do by hand.
 - A meta Content-Security-Policy cannot set `frame-ancestors`; that needs a response header, which GitHub Pages does not offer.
