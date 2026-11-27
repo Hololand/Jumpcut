@@ -373,10 +373,30 @@ test("site.js: an armed frame's cp-ended is quiet, and the tab hidden syncs the 
   assert.match(vis.slice(0, vis.indexOf("} else {")), /armEvent\(\{ type: "sync" \}\)/);
 });
 
-test("site.css: the armed frame takes no pointer, and the lifted one sits over the preview", async () => {
+// Every declaration block in the stylesheet whose selector names the class.
+const rulesFor = (css, cls) => [...css.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .filter((m) => m[1].includes(cls)).map((m) => m[2]);
+
+test("site.css: the armed frame is invisible and takes no pointer, but stays laid out and rendering", async () => {
   const css = await read("site.css");
-  assert.match(css, /\.stage iframe\.is-armed \{ pointer-events: none; \}/);
-  assert.match(css, /\.stage iframe\.is-lifted \{ z-index: 1; \}/);
+  const armed = rulesFor(css, ".is-armed");
+  assert.equal(armed.length, 1);
+  assert.match(armed[0], /(^|;)\s*opacity:\s*0\s*;/);
+  assert.match(armed[0], /pointer-events:\s*none/);
+  assert.doesNotMatch(armed[0], /\b(display|visibility)\s*:/, "never display or visibility: the stream must keep running");
+});
+
+test("site.css: the lifted frame sits over the preview at full opacity at once, with no transition to wait for", async () => {
+  const css = await read("site.css");
+  const lifted = rulesFor(css, ".is-lifted");
+  assert.equal(lifted.length, 1);
+  assert.match(lifted[0], /z-index:\s*1/);
+  assert.match(lifted[0], /opacity:\s*1\s*;/);
+  assert.match(lifted[0], /transition:\s*none/);
+  // No rule that reaches the stage's frame animates it.
+  for (const body of rulesFor(css, "iframe")) {
+    assert.doesNotMatch(body, /transition:(?!\s*none\s*;)/, body);
+  }
 });
 
 // ---------- the fake backend's warm flag ----------
