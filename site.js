@@ -533,6 +533,8 @@ function armView() {
     phase: s.phase,
     framed: s.frame !== null,
     hidden: document.hidden,
+    now: Date.now(),
+    maxPerMinute: config.armMaxPerMinute,
   };
 }
 

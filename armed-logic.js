@@ -12,9 +12,25 @@
 // launching (the launch call is out) or armed (a frame waits under the
 // poster). visit is the featured tile's id. used is true once this visit of
 // the tile has armed, or tried to, or played: a tile arms at most once per
-// visit to the middle, so a disarm never leads to a second seat.
+// visit to the middle, so a disarm never leads to a second seat. launches
+// holds the times of this page's arming launch calls, for the cap
+// (armRoom): it lives as long as the page, across visits.
 export function createArm() {
-  return { stage: "idle", visit: null, used: false };
+  return { stage: "idle", visit: null, used: false, launches: [] };
+}
+
+// The cap counts arming launch calls over a sliding window of one minute,
+// the unit of the stack's own launch limit (6 a minute per address).
+export const ARM_WINDOW_MS = 60_000;
+
+// Whether one more arming fits under view.maxPerMinute, counted over the
+// last ARM_WINDOW_MS before view.now. A press is never counted here, and
+// the cap never blocks one: it exists to leave room for presses.
+export function armRoom(arm, view) {
+  const max = view && view.maxPerMinute;
+  if (!Number.isInteger(max) || max < 1 || !Number.isFinite(view.now)) return false;
+  const recent = (arm.launches || []).filter((at) => view.now - at < ARM_WINDOW_MS);
+  return recent.length < max;
 }
 
 // The page as the machine sees it.
@@ -25,6 +41,8 @@ export function createArm() {
 //   phase    preview, launching or playing (site.js's own phase)
 //   framed   true when a playing frame exists
 //   hidden   document.hidden
+//   now      Date.now(), for the cap
+//   maxPerMinute config.armMaxPerMinute
 export function canArm(arm, view) {
   return Boolean(view) && view.enabled === true && view.hidden !== true &&
     view.phase === "preview" && view.framed !== true &&
@@ -56,13 +74,13 @@ export function armStep(arm, event, view) {
   if (!view || view.enabled !== true) {
     // The switch is off: nothing runs. Anything left over is undone.
     fx.push(...teardown(a.stage));
-    return { arm: { stage: "idle", visit: view ? view.featured : null, used: false }, effects: fx };
+    return { arm: { ...createArm(), visit: view ? view.featured : null }, effects: fx };
   }
 
   // A new tile in the middle is a new visit. The old one's arming goes.
   if (view.featured !== a.visit) {
     fx.push(...teardown(a.stage));
-    a = { stage: "idle", visit: view.featured, used: false };
+    a = { stage: "idle", visit: view.featured, used: false, launches: a.launches || [] };
   }
 
   if (type === "press") {
@@ -93,11 +111,15 @@ export function armStep(arm, event, view) {
 
   if (type === "dwell") {
     if (a.stage === "dwell") {
-      if (canArm(a, view)) {
+      if (canArm(a, view) && armRoom(a, view)) {
         a.stage = "launching";
         a.used = true;
+        a.launches = [...(a.launches || []).filter((at) => view.now - at < ARM_WINDOW_MS), view.now];
         fx.push("launch");
       } else {
+        // Over the cap the tile simply does not arm in this visit: no new
+        // dwell. A later visit to the middle may, once the window has room.
+        if (canArm(a, view)) a.used = true;
         a.stage = "idle";
       }
     }

@@ -21,6 +21,11 @@ export const config = Object.freeze({
   // How long a warm tile must stay featured before it arms. Only read when
   // connectBeforeClick is true.
   armDwellMs: 1500,
+  // At most this many armings (each a real launch call) in any 60 seconds.
+  // The stack's launch limit is 6 a minute per address; armings must leave
+  // room for real presses, which are never counted or blocked. Only read
+  // when connectBeforeClick is true.
+  armMaxPerMinute: 2,
 
   // The tile in the middle when the page loads.
   featuredOnLoad: "hello",

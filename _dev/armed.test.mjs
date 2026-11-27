@@ -15,6 +15,7 @@ const read = (name) => readFile(fileURLToPath(new URL(`../${name}`, import.meta.
 const READY = Object.freeze({
   enabled: true, featured: "hello", state: "online", warm: true,
   phase: "preview", framed: false, hidden: false,
+  now: 0, maxPerMinute: 2,
 });
 
 // A small stand-in for site.js: runs events through the machine, keeps the
@@ -307,6 +308,65 @@ test("never two frames, and never an armed one beside a playing stream, over man
     }
     assert.ok(m.maxFrames <= 1, `run ${run}`);
   }
+});
+
+// ---------- the cap on armings ----------
+
+// Arm, then leave the middle and come back, at the given time.
+function armAt(m, now, tile) {
+  m.send({ type: "sync" }, { featured: tile, now });
+  return m.send({ type: "dwell" }, { now });
+}
+
+test("config: armings are capped at 2 a minute, under the stack's launch limit of 6", () => {
+  assert.equal(config.armMaxPerMinute, 2);
+  assert.equal(A.ARM_WINDOW_MS, 60_000);
+});
+
+test("cap: the third arming inside a minute does not happen, and restarts no dwell in that visit", () => {
+  const m = machine();
+  assert.deepEqual(armAt(m, 0, "hello"), ["launch"]);
+  assert.deepEqual(armAt(m, 2_000, "airsim"), ["launch"]);
+  assert.deepEqual(armAt(m, 4_000, "hello"), [], "over the cap: no launch");
+  assert.equal(m.arm.stage, "idle");
+  assert.deepEqual(m.send({ type: "sync" }, { now: 59_000 }), [], "no new dwell in this visit");
+  assert.equal(m.effects.filter((fx) => fx === "launch").length, 2);
+});
+
+test("cap: a later visit arms once the window has moved on", () => {
+  const m = machine();
+  armAt(m, 0, "hello");
+  armAt(m, 2_000, "airsim");
+  assert.deepEqual(armAt(m, 59_999, "hello"), [], "still inside the minute");
+  assert.deepEqual(armAt(m, 60_000, "airsim"), ["launch"], "the first arming has left the window");
+  assert.deepEqual(armAt(m, 61_000, "hello"), [], "the second is still inside it");
+  assert.deepEqual(armAt(m, 62_000, "airsim"), ["launch"]);
+});
+
+test("cap: a press is never counted and never blocked, and with the cap reached it launches as today", () => {
+  const m = machine();
+  armAt(m, 0, "hello");
+  armAt(m, 2_000, "airsim");
+  armAt(m, 4_000, "hello");
+  // No armed frame: the press undoes nothing and play() runs its own launch call.
+  assert.deepEqual(m.send({ type: "press" }, { now: 5_000 }), []);
+  assert.equal(m.arm.launches.length, 2, "the press is not counted");
+  assert.equal(A.armRoom(m.arm, { ...m.view, now: 5_000 }), false);
+});
+
+test("cap: a missing or bad cap arms nothing", () => {
+  for (const maxPerMinute of [undefined, 0, -1, 1.5, "2"]) {
+    const m = machine({ ...READY, maxPerMinute });
+    m.send({ type: "sync" });
+    assert.deepEqual(m.send({ type: "dwell" }), [], String(maxPerMinute));
+  }
+});
+
+test("site.js: the cap is read from config, and play() never consults it", async () => {
+  const src = await read("site.js");
+  assert.match(src, /maxPerMinute: config\.armMaxPerMinute,/);
+  const play = src.slice(src.indexOf("async function play()"), src.indexOf("\nasync function launchCall("));
+  assert.doesNotMatch(play, /armRoom|armMaxPerMinute|maxPerMinute/);
 });
 
 // ---------- the status flag and the messages ----------

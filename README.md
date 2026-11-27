@@ -87,6 +87,7 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | `featuredOnLoad` | `config.js` | `hello` | The tile in the middle on load |
 | `connectBeforeClick` | `config.js` | `false` | Connect before the click (item 5c). Needs Holland's yes before it is switched on: see "Connect before the click" below |
 | `armDwellMs` | `config.js` | 1500 | How long a warm tile stays featured before it arms. Read only when the switch is on |
+| `armMaxPerMinute` | `config.js` | 2 | The most armings in any 60 seconds, to leave room under the stack's 6 launches a minute for real presses. Read only when the switch is on |
 | `tiles` | `config.js` | Video Games, iGaming, Simulations | Order, ids, names, media and three `points` each, every point `{ text }`, one line, shown beside its number. The ids (`lyra`, `hello`, `airsim`) are the backend's game ids, so they stay |
 | `--ground-<id>` | `site.css`, top of the file | `#eef0fa`, `#f8f3e9`, `#eef4f0` | Each scene's page colour. Keep it light: all text is ink on it |
 | `--accent-<id>`, `--second-<id>` | `site.css`, top of the file | blue `#3b5cff` and violet `#8a5cf5`; gold `#e3a21a` and amber `#d9822b`; green `#2f9e5e` and sky `#3b9fe0` | The scene's two colours: the pools, the glow, the numerals and the short stroke on the rule |
@@ -108,6 +109,7 @@ A switch for Phase 7 speed, `connectBeforeClick` in `config.js`. It is off, and 
 
 - What it does: the featured tile connects to a waiting stream before the visitor presses "Play now", so the press only reveals a stream that is already running (item 5c).
 - What it costs: a seat for every visitor who rests on a warm tile for `armDwellMs`, whether they press or not. The stack ends a stream that is never revealed after its own limit (the session manager's armed time, 60 seconds by default), so one resting visitor holds one seat for up to that long.
+- The cap: each arming is a real launch call, and the stack allows 6 a minute per address. So the page arms at most `armMaxPerMinute` (2) times in any 60 seconds, and over the cap a tile simply does not arm. A real press is never counted and never blocked.
 - Why it needs Holland's yes: it changes the Phase 6 homepage rule "Nothing starts on its own. A stream starts only when the visitor presses Play now." It also needs the stack's armed requests, which are a proposal to contract 2 and are off on the stack too.
 
 ## Publishing
