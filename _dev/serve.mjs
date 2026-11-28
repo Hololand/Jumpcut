@@ -75,13 +75,15 @@ let states = {};
 let launchMode = "ok"; // ok, rate_limited, error, wrong_origin
 let exitReason = "idle"; // what the fake play page's button reports
 let failStatus = false;
+let warm = {}; // a game listed here reads warm: true; absent, as from an older stack, it sends no flag
 let log = {};
 function reset() {
   states = Object.fromEntries(KNOWN.map((id) => [id, "offline"]));
   launchMode = "ok";
   exitReason = "idle";
   failStatus = false;
-  log = { statusReads: 0, launches: 0, framesLoaded: 0, framesEnded: 0 };
+  warm = {};
+  log = { statusReads: 0, launches: 0, framesLoaded: 0, framesEnded: 0, framesArmed: 0, reveals: 0 };
 }
 reset();
 
@@ -111,6 +113,12 @@ function readBody(req) {
 
 const STATES = new Set(["offline", "online", "busy"]);
 
+// One game's entry in the status answer. warm is sent only when set, so the
+// default answer is the shape an older stack sends.
+function statusEntry(id, s = states, w = warm) {
+  return w[id] === true ? { id, state: s[id], warm: true } : { id, state: s[id] };
+}
+
 const fake = http.createServer(async (req, res) => {
   const url = new URL(req.url, FAKE_ORIGIN);
   const p = url.pathname;
@@ -129,7 +137,7 @@ const fake = http.createServer(async (req, res) => {
   if (p === "/v0/demo/status" && req.method === "GET") {
     log.statusReads += 1;
     if (failStatus) return json(req, res, 500, { error: { code: "internal" } });
-    return json(req, res, 200, { games: KNOWN.map((id) => ({ id, state: states[id] })) });
+    return json(req, res, 200, { games: KNOWN.map((id) => statusEntry(id)) });
   }
 
   if (p === "/v0/demo/launch" && req.method === "POST") {
@@ -154,6 +162,8 @@ const fake = http.createServer(async (req, res) => {
     const e = url.searchParams.get("e");
     if (e === "loaded") log.framesLoaded += 1;
     if (e === "ended") log.framesEnded += 1;
+    if (e === "armed") log.framesArmed += 1;
+    if (e === "revealed") log.reveals += 1;
     res.writeHead(204, cors(req));
     return res.end();
   }
@@ -168,9 +178,12 @@ const fake = http.createServer(async (req, res) => {
     }
     const launch = url.searchParams.get("launch");
     if (["ok", "rate_limited", "error", "wrong_origin"].includes(launch)) launchMode = launch;
+    const w = url.searchParams.get("warm");
+    if (w === "on") warm = Object.fromEntries(KNOWN.map((id) => [id, true]));
+    if (w === "off") warm = {};
     const exit = url.searchParams.get("exit");
     if (exit && /^[a-z_]{1,40}$/.test(exit)) exitReason = exit;
-    return json(req, res, 200, { states, failStatus, launchMode, exitReason });
+    return json(req, res, 200, { states, warm, failStatus, launchMode, exitReason });
   }
 
   if (p === "/_dev/log") return json(req, res, 200, log);
@@ -214,6 +227,14 @@ function playPage() {
   addEventListener("pointerdown", () => bump("p"));
   addEventListener("pointermove", () => bump("p"));
   navigator.sendBeacon("${FAKE_ORIGIN}/_dev/beacon?e=loaded");
+  // Connect before the click: an armed frame waits for cp-reveal from the homepage.
+  if (location.hash === "#armed") {
+    navigator.sendBeacon("${FAKE_ORIGIN}/_dev/beacon?e=armed");
+    addEventListener("message", (e) => {
+      if (e.origin !== "${SITE_ORIGIN}" || e.source !== parent) return;
+      if (e.data && e.data.type === "cp-reveal") navigator.sendBeacon("${FAKE_ORIGIN}/_dev/beacon?e=revealed");
+    });
+  }
   addEventListener("pagehide", () => navigator.sendBeacon("${FAKE_ORIGIN}/_dev/beacon?e=ended"));
   document.getElementById("end").addEventListener("click", () => {
     location.href = "${SITE_ORIGIN}/ended.html?cpExit=${exitReason}";

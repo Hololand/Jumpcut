@@ -495,6 +495,17 @@ body[data-scene="airsim"] .backdrop-airsim { opacity: 1; }
   display: block;
   background: var(--screen);
 }
+/* Connect before the click (config.connectBeforeClick, off by default). An
+   armed frame is put in the stage before the preview, so the preview and its
+   poster paint over it. It is also fully transparent, so nothing of it shows
+   while the poster fades in, and it takes no pointer (site.js also makes it
+   inert, so no focus or key reaches it). Opacity, not display or visibility:
+   the frame stays laid out at its real size and keeps rendering, so the
+   stream is running when it is revealed. The press lifts it over the
+   preview in place, at full opacity at once with no transition: moving an
+   iframe in the DOM would reload it. */
+.stage iframe.is-armed { opacity: 0; pointer-events: none; }
+.stage iframe.is-lifted { z-index: 1; opacity: 1; transition: none; }
 
 /* A neighbour's name sits on the edge nearest the middle, so it reads in the peek */
 .tile-label {

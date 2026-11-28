@@ -4,6 +4,7 @@
 
 import { config } from "./config.js";
 import * as L from "./carousel-logic.js";
+import * as A from "./armed-logic.js";
 
 const tiles = config.tiles;
 const ids = tiles.map((t) => t.id);
@@ -45,6 +46,7 @@ const NOTES = {
 const s = {
   index: L.clampIndex(Math.max(0, ids.indexOf(config.featuredOnLoad)), tiles.length),
   states: L.readStatus(0, null, ids),
+  warm: A.readWarm(0, null, ids), // read only by the connect-before-click switch
   phase: "preview", // preview, launching or playing
   windowed: false, // a phone playing: the tile fills the window (CSS keys on body.play-window)
   note: "",
@@ -108,6 +110,8 @@ function updateWindowed() {
 }
 
 function render() {
+  // First, so what the tile shows below reads the arming as it now stands.
+  armEvent({ type: "sync" });
   const featured = tiles[s.index];
   updateWindowed();
   tileEls.forEach((t, i) => {
@@ -117,10 +121,10 @@ function render() {
     t.root.inert = far;
     t.root.setAttribute("aria-hidden", far ? "true" : "false");
     t.pick.hidden = offset === 0;
-    t.state.textContent = STATE_TEXT[s.states[tiles[i].id]];
+    t.state.textContent = STATE_TEXT[shownState(tiles[i].id)];
   });
 
-  const shown = s.phase === "preview" ? s.states[featured.id] : s.phase;
+  const shown = s.phase === "preview" ? shownState(featured.id) : s.phase;
   el.position.textContent = L.positionLabel(s.index, tiles.length);
   el.state.dataset.state = shown === "launching" ? "playing" : shown;
   el.state.textContent = STATE_TEXT[shown];
@@ -131,7 +135,7 @@ function render() {
   el.note.textContent = s.note;
   renderAction(featured);
   // The terms line goes with Play now and nothing else, so never with a stream.
-  el.consent.classList.toggle("is-on", L.showsConsent(s.phase, s.states[featured.id]));
+  el.consent.classList.toggle("is-on", L.showsConsent(s.phase, shownState(featured.id)));
   renderMedia();
   renderHints(false);
 
@@ -140,6 +144,13 @@ function render() {
     s.announced = line;
     el.announce.textContent = line;
   }
+}
+
+// A tile's state as the visitor sees it: the status, except that a busy
+// status over this visitor's own armed seat still shows "Play now"
+// (A.shownState). With the switch off it is the status itself.
+function shownState(id) {
+  return A.shownState(arm, id, s.states[id]);
 }
 
 // The resource hints for the featured tile (L.warmHints): a preconnect to
@@ -189,7 +200,7 @@ function renderPoints(tile) {
 
 function renderAction(tile) {
   const hadFocus = el.action.contains(document.activeElement);
-  const state = s.states[tile.id];
+  const state = shownState(tile.id);
   const nodes = [];
   if (s.phase === "playing") {
     nodes.push(button("End demo", endDemo, "button button-quiet", ICON_STOP));
@@ -411,13 +422,40 @@ async function play() {
   // The visitor's click, for the play page's click-to-first-frame clock.
   const clickedAt = Date.now();
   const tile = tiles[s.index];
-  if (s.phase !== "preview" || s.states[tile.id] !== "online") return;
+  if (s.phase !== "preview" || shownState(tile.id) !== "online") return;
+  // A stream already waiting under the poster is only revealed: no second
+  // launch. Anything else of the arming (a dwell, a launch in flight) is
+  // undone, and the press goes on as it always has.
+  if (armEvent({ type: "press" }).includes("reveal") && armed.frame) {
+    revealArmed(clickedAt);
+    return;
+  }
   s.phase = "launching";
   s.note = "";
   render();
 
   const ctl = new AbortController();
   s.launchCtl = ctl;
+  const { status, body } = await launchCall(tile, ctl);
+  if (s.launchCtl !== ctl) return; // the visitor moved on meanwhile
+  s.launchCtl = null;
+
+  const out = L.launchOutcome(status, body, config.playOrigin);
+  if (out.kind === "play") {
+    startFrame(out.url, tile, clickedAt);
+    return;
+  }
+  s.phase = "preview";
+  if (out.kind === "offline") s.states[tile.id] = "offline";
+  if (out.kind === "busy") s.states[tile.id] = "busy";
+  s.note = NOTES[out.kind] || "";
+  render();
+}
+
+// The one launch call, made by play() on the press and, only when
+// config.connectBeforeClick is true, by armLaunch(). Never throws: a network
+// failure or a time-out answers status 0.
+async function launchCall(tile, ctl) {
   const timer = setTimeout(() => ctl.abort(), config.launchTimeoutMs);
   let status = 0;
   let body = null;
@@ -437,34 +475,32 @@ async function play() {
   } finally {
     clearTimeout(timer);
   }
-  if (s.launchCtl !== ctl) return; // the visitor moved on meanwhile
-  s.launchCtl = null;
+  return { status, body };
+}
 
-  const out = L.launchOutcome(status, body, config.playOrigin);
-  if (out.kind === "play") {
-    startFrame(out.url, tile, clickedAt);
-    return;
-  }
-  s.phase = "preview";
-  if (out.kind === "offline") s.states[tile.id] = "offline";
-  if (out.kind === "busy") s.states[tile.id] = "busy";
-  s.note = NOTES[out.kind] || "";
-  render();
+function makeFrame(url, tile) {
+  const frame = document.createElement("iframe");
+  frame.title = `${tile.name} demo, live stream`;
+  frame.allow = "autoplay; fullscreen; gamepad";
+  frame.src = url;
+  return frame;
+}
+
+// Only the play origin can receive it, so if the frame has already moved on
+// (to ended.html) the message goes nowhere.
+function postToFrame(frame, message) {
+  if (frame.contentWindow) frame.contentWindow.postMessage(message, config.playOrigin);
 }
 
 function startFrame(url, tile, clickedAt) {
   removeFrame();
-  const frame = document.createElement("iframe");
-  frame.title = `${tile.name} demo, live stream`;
-  frame.allow = "autoplay; fullscreen; gamepad";
-  // Once the play page has loaded, tell it when the visitor clicked. Only the
-  // play origin can receive it, so if the frame has already moved on (to
-  // ended.html) the message goes nowhere. It carries a time and nothing else.
+  const frame = makeFrame(url, tile);
+  // Once the play page has loaded, tell it when the visitor clicked. It
+  // carries a time and nothing else.
   frame.addEventListener("load", () => {
-    if (s.frame !== frame || !frame.contentWindow) return;
-    frame.contentWindow.postMessage(L.clickMessage(clickedAt), config.playOrigin);
+    if (s.frame !== frame) return;
+    postToFrame(frame, L.clickMessage(clickedAt));
   }, { once: true });
-  frame.src = url;
   s.frame = frame;
   s.phase = "playing";
   tileEls[s.index].stage.append(frame);
@@ -478,6 +514,124 @@ function removeFrame() {
     s.frame.remove();
     s.frame = null;
   }
+}
+
+// ---------- connect before the click (off unless config.connectBeforeClick) ----------
+
+// The rules are A.armStep in armed-logic.js; this only runs its effects.
+let arm = A.createArm();
+// frame is the armed frame's record: { frame, loaded, revealAt }.
+const armed = { timer: 0, ctl: null, frame: null };
+
+function armView() {
+  const id = tiles[s.index].id;
+  return {
+    enabled: config.connectBeforeClick === true,
+    featured: id,
+    state: s.states[id],
+    warm: s.warm[id] === true,
+    phase: s.phase,
+    framed: s.frame !== null,
+    hidden: document.hidden,
+    now: Date.now(),
+    maxPerMinute: config.armMaxPerMinute,
+  };
+}
+
+// Returns the effects it ran. With the switch off it runs nothing at all.
+function armEvent(event) {
+  if (config.connectBeforeClick !== true) return [];
+  const step = A.armStep(arm, event, armView());
+  arm = step.arm;
+  for (const fx of step.effects) {
+    if (fx === "startTimer") {
+      clearTimeout(armed.timer);
+      armed.timer = setTimeout(() => { armed.timer = 0; armEvent({ type: "dwell" }); }, config.armDwellMs);
+    } else if (fx === "clearTimer") {
+      clearTimeout(armed.timer);
+      armed.timer = 0;
+    } else if (fx === "launch") {
+      armLaunch(tiles[s.index]);
+    } else if (fx === "abortLaunch") {
+      const ctl = armed.ctl;
+      armed.ctl = null;
+      if (ctl) ctl.abort();
+    } else if (fx === "frame") {
+      armFrame(event.url, tiles[s.index]);
+    } else if (fx === "removeFrame") {
+      removeArmedFrame();
+    }
+    // "reveal" is the caller's: play() lifts the poster.
+  }
+  return step.effects;
+}
+
+async function armLaunch(tile) {
+  const ctl = new AbortController();
+  armed.ctl = ctl;
+  const { status, body } = await launchCall(tile, ctl);
+  if (armed.ctl !== ctl) return; // disarmed meanwhile
+  armed.ctl = null;
+  // Busy, offline, a refusal or a failure all disarm quietly: no note, and
+  // the tile's state waits for the next status read.
+  const out = L.launchOutcome(status, body, config.playOrigin);
+  const url = out.kind === "play" ? A.armedUrl(out.url) : null;
+  armEvent(url ? { type: "launched", ok: true, url } : { type: "launched", ok: false });
+}
+
+// The armed frame goes in before the preview, so the poster paints over it
+// (site.css, .is-armed). inert keeps every pointer, key and focus out until
+// the press, so no input reaches the game early.
+function armFrame(url, tile) {
+  removeArmedFrame();
+  const frame = makeFrame(url, tile);
+  frame.classList.add("is-armed");
+  frame.inert = true;
+  frame.tabIndex = -1;
+  frame.setAttribute("aria-hidden", "true");
+  // This frame's own record, so a reveal waiting for its load stays with it.
+  const rec = { frame, loaded: false, revealAt: null };
+  armed.frame = rec;
+  frame.addEventListener("load", () => {
+    if (rec.loaded) return; // a later load is ended.html, not the play page
+    rec.loaded = true;
+    if (rec.revealAt !== null) sendReveal(frame, rec.revealAt);
+  });
+  tileEls[s.index].stage.prepend(frame);
+}
+
+function removeArmedFrame() {
+  if (armed.frame) {
+    armed.frame.frame.remove();
+    armed.frame = null;
+  }
+}
+
+function sendReveal(frame, at) {
+  if (s.frame !== frame) return;
+  postToFrame(frame, A.revealMessage(at));
+  // The armed frame loaded before the press, so it has not had the click time.
+  postToFrame(frame, L.clickMessage(at));
+}
+
+// The press over an armed frame: lift it over the poster in place, exactly
+// where a playing frame sits, tell it, and give it focus.
+function revealArmed(clickedAt) {
+  const rec = armed.frame;
+  armed.frame = null;
+  const frame = rec.frame;
+  frame.classList.remove("is-armed");
+  frame.classList.add("is-lifted");
+  frame.inert = false;
+  frame.removeAttribute("tabindex");
+  frame.removeAttribute("aria-hidden");
+  s.frame = frame;
+  s.phase = "playing";
+  s.note = "";
+  render();
+  if (rec.loaded) sendReveal(frame, clickedAt);
+  else rec.revealAt = clickedAt; // sent from the frame's load
+  frame.focus();
 }
 
 function fullscreenElement() {
@@ -545,9 +699,14 @@ function endDemo() {
 // ended.html, inside the frame, reports a stream that ended on its own.
 addEventListener("message", (e) => {
   if (e.origin !== location.origin) return;
-  if (!s.frame || e.source !== s.frame.contentWindow) return;
   const data = e.data;
   if (!data || typeof data !== "object" || data.type !== "cp-ended") return;
+  // An armed frame that ended before the press goes quietly: no note.
+  if (armed.frame && e.source === armed.frame.frame.contentWindow) {
+    armEvent({ type: "ended" });
+    return;
+  }
+  if (!s.frame || e.source !== s.frame.contentWindow) return;
   const reason = L.endReason(data.reason);
   stopStream();
   s.note = NOTES[reason] && (reason === "no_capacity" || reason === "error") ? NOTES[reason] : "";
@@ -585,6 +744,7 @@ async function poll() {
   if (s.pollCtl !== ctl) return;
   s.pollCtl = null;
   s.states = L.readStatus(status, body, ids);
+  s.warm = A.readWarm(status, body, ids);
   render();
   renderHints(true);
   if (!document.hidden) s.pollTimer = setTimeout(poll, config.pollIntervalMs);
@@ -596,6 +756,8 @@ document.addEventListener("visibilitychange", () => {
     s.pollTimer = 0;
     if (s.pollCtl) s.pollCtl.abort();
     s.pollCtl = null;
+    // A background tab never holds a seat: any arming goes.
+    armEvent({ type: "sync" });
   } else {
     poll();
   }

@@ -15,6 +15,7 @@ The front door for iGaming operators, game studios and simulation teams. Three d
 5. Nothing starts on its own. "Play now" sends `POST https://rgs.jumpcut.cloud/v0/demo/launch` with the game's id. The answer's `launchUrl` is framed only when its origin is exactly `https://play.jumpcut.cloud`. The framed page shows its own loading screen, then the game.
 5a. Ready before the click. While the featured tile is online and shows its preview, the page adds one `<link rel="preconnect">` to `playOrigin`, so the frame's first request finds a warm connection. Each status read puts it in again, because a browser drops a connection it does not use. It starts nothing: no launch, no ticket, no stream, no frame. The homepage adds only this `preconnect`. There is no `preload`, `prefetch` or `modulepreload` of the play page's script. Its HTML and config are sent `no-store`. Its script and the SDK may be sent `no-store` or under content-hashed names with a long cache life, depending on the stack's release. Either way the hashed names are known only to the play page's own HTML, which already preloads them all in one round. A `modulepreload` here would also fill this page's module map, not the frame's. The rule is `warmHints` in `carousel-logic.js`.
 5b. The click clock. "Play now" notes `Date.now()` the moment it is pressed. When the frame has loaded, the page posts `{ type: "cp-click", at }` to it, with `playOrigin` as the target, so the play page can time the click to its first frame. The message carries a time and nothing else. The play page believes it only when its own `CP_PAGE_CLICK_ORIGINS` names this site.
+5c. Connect before the click: a switch, `connectBeforeClick` in `config.js`, which is off. Off, nothing in this item runs and the page behaves as items 5 to 5b say. On, a featured tile that is online, whose status says `warm: true` (a waiting session is ready for that game; an older stack sends no flag, which reads as not warm), with no stream running, waits `armDwellMs`. If all of that still holds, it makes the launch call a click makes and loads the frame with `#armed` added to the launch URL, under the tile's preview. The poster, the preview and "Play now" look exactly as before. The frame sits under the preview at opacity 0, so nothing of it shows even while the poster fades in. It stays laid out and rendering, never `display: none` or `visibility: hidden`, so the stream is running. It is inert and takes no pointer, so no input reaches the game. "Play now" then lifts the frame over the preview in place, at full opacity at once with no transition, posts `{ type: "cp-reveal", at }` and the click time to it, with `playOrigin` as the target, and focuses it. There is no second launch. Before a frame exists, the arming stops quietly, with nothing shown, when the status reads offline, busy or not warm, or when the launch call fails or answers busy. Once a frame is armed it holds its own seat, so busy and not warm are expected and do not touch it: the tile keeps its poster and "Play now", and the press reveals the frame. An armed frame goes, quietly, only when another tile moves into the middle, the status reads offline, the tab is hidden, or the frame reports it ended. A tile arms at most once each time it comes into the middle, and never beside a playing stream. The rules are `armStep` in `armed-logic.js`.
 6. Nothing of ours is drawn over a playing stream. Its controls ("End demo", and "Full screen" where the browser offers the Fullscreen API) sit beside it.
 6a. On a phone (the upright and short-landscape layouts), a playing stream takes over the window. The header, headline, info text, neighbours and footer step aside, and the featured tile is fixed to the window with one slim control area: a bar on top when upright, a rail on the left when sideways. The bar and rail never overlap the stream, and the safe-area insets are kept. Upright, the stream is taller than wide, so the game draws its phone layout. Only CSS changes (`body.play-window`, set by `site.js`), so rotating the phone swaps bar and rail without reloading the frame. While it plays, no wheel, swipe or key moves the carousel; "End demo" is the way out. A desktop keeps the stream in its tile.
 6b. "Full screen" puts the featured tile (the frame's own parent, so the frame never moves) in the browser's fullscreen. Esc or the browser's controls leave it, and a stream that ends or "End demo" leaves it first.
@@ -35,12 +36,13 @@ Moving the carousel: the mouse wheel, a vertical swipe, the arrow and page keys,
 | `site.css` | All styles, with the layouts for desktop, phone upright and phone sideways. The scene colours, backdrops and glow are tweak points at the top; the backdrop patterns are SVG drawn for this site, inline as `data:` URIs |
 | `site.js` | Builds the tiles and the selling-point rows, and wires input, status, launch and the frame |
 | `carousel-logic.js` | Pure rules with no DOM: ends, status reading, launch URL check, wheel and swipe steps, tile sizing |
-| `config.js` | Backend origins, sales address, timings and the tiles |
+| `armed-logic.js` | Pure rules for connect before the click (item 5c): when to arm, disarm and reveal, the status's `warm` flag, the `#armed` URL |
+| `config.js` | Backend origins, sales address, timings, the connect-before-click switch and the tiles |
 | `ended.html`, `ended.js`, `ended.css` | Where a framed stream lands when it ends; reports the reason to the homepage |
 | `terms.html`, `terms.css` | Demo terms and credits, linked from the footer and from beside "Play now"; its own CSP allows no script |
 | `media/` | Tile stills (SVG, drawn for this site) and each tile's preview videos and posters when present |
 | `_dev/serve.mjs` | Local server and fake backend (not published) |
-| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, the first paint of `index.html`, the terms page and links, and the hints and click message before and at the click (`prewarm.test.mjs`, which also reads `site.js` to check the launch call runs only from "Play now") (not published) |
+| `_dev/*.test.mjs` | Tests for `carousel-logic.js`, `config.js`, the first paint of `index.html`, the terms page and links, and the hints and click message before and at the click (`prewarm.test.mjs`, which also reads `site.js` to check the launch call runs only from "Play now" and the switched arming), and connect before the click (`armed.test.mjs`) (not published) |
 | `CNAME`, `favicon.ico`, `logo.png` | Domain and icons |
 
 ## How to run
@@ -58,8 +60,9 @@ Switch the fake backend's state in another tab or with curl:
 - `http://127.0.0.1:8601/_dev/state?all=online` (or `offline`, `busy`, `fail` for a 500)
 - `http://127.0.0.1:8601/_dev/state?hello=busy` (one game)
 - `http://127.0.0.1:8601/_dev/state?launch=rate_limited` (or `error`, `wrong_origin`, `ok`)
+- `http://127.0.0.1:8601/_dev/state?warm=on` (or `off`: whether the status says a waiting session is ready; off sends no flag, as an older stack does)
 - `http://127.0.0.1:8601/_dev/state?exit=no_capacity` (the reason the fake play page's end button reports)
-- `http://127.0.0.1:8601/_dev/log` (status reads, launches, frames loaded, frames ended)
+- `http://127.0.0.1:8601/_dev/log` (status reads, launches, frames loaded, frames ended, frames loaded armed, reveals)
 - `http://127.0.0.1:8601/_dev/reset`
 
 Environment: `DEV_SITE_PORT` (8600), `DEV_FAKE_PORT` (8601), `DEV_RGS_ORIGIN` and `DEV_PLAY_ORIGIN` (both default to the fake backend; point them at a real local stack to try it).
@@ -82,6 +85,9 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | `pollIntervalMs` | `config.js` | 20000 | How often the status is read while the tab is visible |
 | `statusTimeoutMs`, `launchTimeoutMs` | `config.js` | 8000, 15000 | When a status read or launch counts as failed |
 | `featuredOnLoad` | `config.js` | `hello` | The tile in the middle on load |
+| `connectBeforeClick` | `config.js` | `false` | Connect before the click (item 5c). Needs Holland's yes before it is switched on: see "Connect before the click" below |
+| `armDwellMs` | `config.js` | 1500 | How long a warm tile stays featured before it arms. Read only when the switch is on |
+| `armMaxPerMinute` | `config.js` | 2 | The most armings in any 60 seconds, to leave room under the stack's 6 launches a minute for real presses. Read only when the switch is on |
 | `tiles` | `config.js` | Video Games, iGaming, Simulations | Order, ids, names, media and three `points` each, every point `{ text }`, one line, shown beside its number. The ids (`lyra`, `hello`, `airsim`) are the backend's game ids, so they stay |
 | `--ground-<id>` | `site.css`, top of the file | `#eef0fa`, `#f8f3e9`, `#eef4f0` | Each scene's page colour. Keep it light: all text is ink on it |
 | `--accent-<id>`, `--second-<id>` | `site.css`, top of the file | blue `#3b5cff` and violet `#8a5cf5`; gold `#e3a21a` and amber `#d9822b`; green `#2f9e5e` and sky `#3b9fe0` | The scene's two colours: the pools, the glow, the numerals and the short stroke on the rule |
@@ -96,6 +102,15 @@ Then run the server and check the page at 1440x900, 1280x720, 844x390, 390x844 a
 | `--bar`, `--rail` | `site.css` | 3.4rem, 8.25rem | While a phone plays full-window: the height of the top bar (upright) and the width of the side rail (sideways) that hold End demo and Full screen |
 | Wheel threshold and quiet gap | `wheelStep` in `carousel-logic.js` | 24 px, 180 ms | What counts as one wheel gesture |
 | Swipe threshold | `swipeStep` in `carousel-logic.js` | 40 px | How far a finger travels for one step |
+
+## Connect before the click
+
+A switch for Phase 7 speed, `connectBeforeClick` in `config.js`. It is off, and it ships off.
+
+- What it does: the featured tile connects to a waiting stream before the visitor presses "Play now", so the press only reveals a stream that is already running (item 5c).
+- What it costs: a seat for every visitor who rests on a warm tile for `armDwellMs`, whether they press or not. The stack ends a stream that is never revealed after its own limit (the session manager's armed time, 60 seconds by default), so one resting visitor holds one seat for up to that long.
+- The cap: each arming is a real launch call, and the stack allows 6 a minute per address. So the page arms at most `armMaxPerMinute` (2) times in any 60 seconds, and over the cap a tile simply does not arm. A real press is never counted and never blocked.
+- Why it needs Holland's yes: it changes the Phase 6 homepage rule "Nothing starts on its own. A stream starts only when the visitor presses Play now." It also needs the stack's armed requests, which are a proposal to contract 2 and are off on the stack too.
 
 ## Publishing
 
@@ -114,4 +129,5 @@ This repo is public. It never holds a key, token, password, account number, inte
 - The backdrop patterns are fixed drawings inside `site.css`. Their strength is a tweak point; changing their shape means new SVG path data.
 - The preconnect warms only the connection. The play page's HTML and config load after the click, because they are sent `no-store`. Its script and the SDK load after the click too, unless the browser kept them from an earlier visit, which a stack release that serves them under hashed names with a long cache life allows.
 - `prewarm.test.mjs` checks `site.js` by reading its source, not in a browser. A browser check against the fake backend (`/_dev/log` shows no launch before the click) is still to do by hand.
+- Connect before the click is checked by tests of its rules and by reading `site.js`, not in a browser. With the switch on, the fake backend's `/_dev/log` counts armed frames and reveals for a check by hand.
 - A meta Content-Security-Policy cannot set `frame-ancestors`; that needs a response header, which GitHub Pages does not offer.

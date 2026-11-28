@@ -1,0 +1,197 @@
+// Connect before the click (Phase 7 speed): the pure rules for arming the
+// featured tile. No DOM here, so every rule can be tested with node --test
+// (see _dev/armed-logic.test.mjs). site.js runs the effects this returns.
+//
+// Arming does quietly what a click does: the launch call, then the frame,
+// with "#armed" on the launch URL, under the tile's poster. The press only
+// reveals it. It runs only when config.connectBeforeClick is true, which
+// changes the Phase 6 rule "Nothing starts on its own", so it is Holland's
+// decision and ships off.
+
+// One arming machine for the page. stage is idle, dwell (the timer runs),
+// launching (the launch call is out) or armed (a frame waits under the
+// poster). visit is the featured tile's id. used is true once this visit of
+// the tile has armed, or tried to, or played: a tile arms at most once per
+// visit to the middle, so a disarm never leads to a second seat. launches
+// holds the times of this page's arming launch calls, for the cap
+// (armRoom): it lives as long as the page, across visits.
+export function createArm() {
+  return { stage: "idle", visit: null, used: false, launches: [] };
+}
+
+// The cap counts arming launch calls over a sliding window of one minute,
+// the unit of the stack's own launch limit (6 a minute per address).
+export const ARM_WINDOW_MS = 60_000;
+
+// Whether one more arming fits under view.maxPerMinute, counted over the
+// last ARM_WINDOW_MS before view.now. A press is never counted here, and
+// the cap never blocks one: it exists to leave room for presses.
+export function armRoom(arm, view) {
+  const max = view && view.maxPerMinute;
+  if (!Number.isInteger(max) || max < 1 || !Number.isFinite(view.now)) return false;
+  const recent = (arm.launches || []).filter((at) => view.now - at < ARM_WINDOW_MS);
+  return recent.length < max;
+}
+
+// The page as the machine sees it.
+//   enabled  config.connectBeforeClick === true
+//   featured the featured tile's id
+//   state    its status: online, busy or offline
+//   warm     true when its status says a waiting session is ready
+//   phase    preview, launching or playing (site.js's own phase)
+//   framed   true when a playing frame exists
+//   hidden   document.hidden
+//   now      Date.now(), for the cap
+//   maxPerMinute config.armMaxPerMinute
+export function canArm(arm, view) {
+  return Boolean(view) && view.enabled === true && view.hidden !== true &&
+    view.phase === "preview" && view.framed !== true &&
+    view.state === "online" && view.warm === true && !arm.used;
+}
+
+// What it takes to undo a stage, as effects for site.js.
+function teardown(stage) {
+  if (stage === "dwell") return ["clearTimer"];
+  if (stage === "launching") return ["abortLaunch"];
+  if (stage === "armed") return ["removeFrame"];
+  return [];
+}
+
+// One step of the machine. Events:
+//   sync      anything the page shows may have changed (render, status, visibility)
+//   dwell     the dwell timer fired
+//   launched  the arming launch call answered: { ok, url }
+//   ended     the armed frame reported cp-ended before the press
+//   press     the visitor pressed Play now
+// Effects, run by site.js in order: startTimer, clearTimer, launch,
+// abortLaunch, frame (create the armed frame from event.url), removeFrame,
+// reveal (lift the poster over the armed frame).
+export function armStep(arm, event, view) {
+  let a = { ...arm };
+  const fx = [];
+  const type = event && event.type;
+
+  if (!view || view.enabled !== true) {
+    // The switch is off: nothing runs. Anything left over is undone.
+    fx.push(...teardown(a.stage));
+    return { arm: { ...createArm(), visit: view ? view.featured : null }, effects: fx };
+  }
+
+  // A new tile in the middle is a new visit. The old one's arming goes.
+  if (view.featured !== a.visit) {
+    fx.push(...teardown(a.stage));
+    a = { stage: "idle", visit: view.featured, used: false, launches: a.launches || [] };
+  }
+
+  if (type === "press") {
+    if (a.stage === "armed") fx.push("reveal");
+    else fx.push(...teardown(a.stage));
+    return { arm: { ...a, stage: "idle", used: true }, effects: fx };
+  }
+
+  if (type === "ended") {
+    if (a.stage === "armed") {
+      fx.push("removeFrame");
+      a.stage = "idle";
+    }
+    return { arm: a, effects: fx };
+  }
+
+  if (type === "launched") {
+    if (a.stage === "launching") {
+      if (event.ok === true && typeof event.url === "string") {
+        a.stage = "armed";
+        fx.push("frame");
+      } else {
+        a.stage = "idle";
+      }
+    }
+    return { arm: a, effects: fx };
+  }
+
+  if (type === "dwell") {
+    if (a.stage === "dwell") {
+      if (canArm(a, view) && armRoom(a, view)) {
+        a.stage = "launching";
+        a.used = true;
+        a.launches = [...(a.launches || []).filter((at) => view.now - at < ARM_WINDOW_MS), view.now];
+        fx.push("launch");
+      } else {
+        // Over the cap the tile simply does not arm in this visit: no new
+        // dwell. A later visit to the middle may, once the window has room.
+        if (canArm(a, view)) a.used = true;
+        a.stage = "idle";
+      }
+    }
+    return { arm: a, effects: fx };
+  }
+
+  // sync
+  if (a.stage === "launching" || a.stage === "armed") {
+    // Busy and warm count only until the frame exists. An armed frame holds
+    // its own seat, so busy is expected (on a one-seat pool it is certain)
+    // and warm turning false is the same seat seen from the other side:
+    // neither lets it go. Only offline, a hidden tab, leaving the middle or
+    // cp-ended does. While the launch call is out no seat is held yet, and a
+    // stream request with no warm seat would only be refused.
+    const blocked = a.stage === "armed"
+      ? view.state === "offline"
+      : view.state !== "online" || view.warm !== true;
+    const lost = blocked || view.hidden === true ||
+      view.phase !== "preview" || view.framed === true;
+    if (lost) {
+      fx.push(...teardown(a.stage));
+      a.stage = "idle";
+    }
+  } else if (a.stage === "dwell") {
+    if (!canArm(a, view)) {
+      fx.push("clearTimer");
+      a.stage = "idle";
+    }
+  } else if (canArm(a, view)) {
+    a.stage = "dwell";
+    fx.push("startTimer");
+  }
+  return { arm: a, effects: fx };
+}
+
+// The state a tile shows the visitor. A busy status over the tile whose
+// frame is armed is this visitor's own seat, so the tile keeps its poster
+// and "Play now", and a press reveals the frame. Every other case shows the
+// status as it is, so with the switch off nothing changes.
+export function shownState(arm, id, state) {
+  return arm && arm.stage === "armed" && arm.visit === id && state === "busy" ? "online" : state;
+}
+
+// Each game's warm flag from one status answer. Only the boolean true counts:
+// an older stack that sends no flag, a malformed body or anything but a 200
+// all read as not warm.
+export function readWarm(httpStatus, body, ids) {
+  const ok = httpStatus === 200 && body && typeof body === "object" && Array.isArray(body.games);
+  const warm = {};
+  for (const id of ids) {
+    const game = ok ? body.games.find((g) => g && typeof g === "object" && g.id === id) : undefined;
+    warm[id] = Boolean(game) && game.warm === true;
+  }
+  return warm;
+}
+
+// The launch URL with the fragment that tells the play page it is armed.
+// Any fragment already there is replaced, so the play page sees exactly
+// "#armed". The fragment never reaches a server or a log.
+export function armedUrl(launchUrl) {
+  let url;
+  try {
+    url = new URL(launchUrl);
+  } catch {
+    return null;
+  }
+  url.hash = "armed";
+  return url.href;
+}
+
+// What the homepage tells an armed frame when the visitor presses Play now:
+// the press time, and nothing else.
+export function revealMessage(at) {
+  return { type: "cp-reveal", at };
+}

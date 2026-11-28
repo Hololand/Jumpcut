@@ -39,15 +39,35 @@ test("clickMessage carries the type and the time, and nothing else", () => {
 // site.js has no test harness of its own (it needs a DOM), so these read its
 // source: the launch call lives in play() alone, play() runs only from the
 // Play now button, and the hints and the click message go nowhere else.
-test("site.js: the launch call is made only inside play(), and play() only from Play now", async () => {
+// Since connect before the click (armed.test.mjs), the one launch call
+// lives in launchCall(), which play() calls on the press and armLaunch()
+// calls only while config.connectBeforeClick is true.
+const section = (src, start, end) => {
+  const a = src.indexOf(start);
+  const b = src.indexOf(end, a + 1);
+  assert.ok(a >= 0 && b > a, `${start} .. ${end}`);
+  return [a, b];
+};
+
+test("site.js: the launch call is made only inside launchCall(), called from play() and the switched arming alone", async () => {
   const src = await read("site.js");
   const launches = [...src.matchAll(/\/v0\/demo\/launch/g)];
   assert.equal(launches.length, 1, "one launch call in the file");
-  const playStart = src.indexOf("async function play()");
-  const playEnd = src.indexOf("\nfunction startFrame(");
-  assert.ok(playStart >= 0 && playEnd > playStart);
+  const [callStart, callEnd] = section(src, "async function launchCall(", "\n}\n");
   const at = launches[0].index;
-  assert.ok(at > playStart && at < playEnd, "the launch call is inside play()");
+  assert.ok(at > callStart && at < callEnd, "the launch call is inside launchCall()");
+  const code = src.replace(/\/\/[^\n]*/g, "");
+  const calls = [...code.matchAll(/\blaunchCall\(/g)].map((m) => m.index);
+  assert.equal(calls.length, 3, "its definition and two calls");
+  const [playStart, playEnd] = section(code, "async function play()", "\n}\n");
+  const [armStart, armEnd] = section(code, "async function armLaunch(", "\n}\n");
+  const inside = (i, a, b) => i > a && i < b;
+  assert.equal(calls.filter((i) => inside(i, playStart, playEnd)).length, 1, "one call in play()");
+  assert.equal(calls.filter((i) => inside(i, armStart, armEnd)).length, 1, "one call in armLaunch()");
+});
+
+test("site.js: play() runs only from Play now", async () => {
+  const src = await read("site.js");
   // Every mention of the name play outside comments: its definition and the
   // Play now button.
   const code = src.replace(/\/\/[^\n]*/g, "");
@@ -61,8 +81,13 @@ test("site.js: the click time is taken first in play(), and posted to the play o
   const src = await read("site.js");
   const body = src.slice(src.indexOf("async function play()"));
   assert.match(body, /^async function play\(\) \{\n(\s*\/\/[^\n]*\n)*\s*const clickedAt = Date\.now\(\);/);
+  // One postMessage in the file, always to the play origin. What goes through
+  // it: the click time from startFrame(), and, for a revealed armed frame
+  // (connect before the click), cp-reveal and the click time.
   const posts = [...src.matchAll(/postMessage\((.*)\);/g)].map((m) => m[1]);
-  assert.deepEqual(posts, ["L.clickMessage(clickedAt), config.playOrigin"]);
+  assert.deepEqual(posts, ["message, config.playOrigin"]);
+  const sent = [...src.matchAll(/postToFrame\(frame, (.*)\);/g)].map((m) => m[1]);
+  assert.deepEqual(sent, ["L.clickMessage(clickedAt)", "A.revealMessage(at)", "L.clickMessage(at)"]);
 });
 
 test("index.html: no hint to the play page is there before the status says online", async () => {
